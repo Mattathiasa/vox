@@ -34,7 +34,20 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
       - run: npm ci
-      - run: npm test
+      - name: npm test (failures become annotations, readable without logging in)
+        shell: pwsh
+        run: |
+          node --test --test-force-exit --test-timeout=120000 --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=junit.xml (Get-ChildItem test/*.test.js).FullName
+          $code = $LASTEXITCODE
+          if ($code -ne 0 -and (Test-Path junit.xml)) {
+            [xml]$x = Get-Content junit.xml
+            foreach ($f in $x.SelectNodes("//testcase[failure]")) {
+              $msg = ($f.failure.message + " " + $f.failure.InnerText) -replace "`r?`n", " | "
+              if ($msg.Length -gt 900) { $msg = $msg.Substring(0, 900) }
+              Write-Output "::error title=$($f.name)::$msg"
+            }
+          }
+          exit $code
 
   linux:
     runs-on: ubuntu-latest

@@ -1,0 +1,5 @@
+# Keep LF everywhere (the Mac embeds web/remote byte-for-byte; tests compare them on Windows too).
+* text=auto eol=lf
+*.cmd text eol=crlf
+*.png binary
+*.vsix binary

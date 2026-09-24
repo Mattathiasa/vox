@@ -59,7 +59,10 @@ export class TerminalHost {
   shellArgs(command) {
     const shell = this.shell.toLowerCase();
     if (shell.includes("powershell") || shell.includes("pwsh")) return [this.shell, ["-NoLogo", "-Command", command]];
-    if (shell.endsWith("cmd.exe") || shell === "cmd") return [this.shell, ["/d", "/s", "/c", command]];
+    // cmd.exe: pass ONE raw command line (node-pty uses a string verbatim on Windows). An args array
+    // would get C-style \" escaping, which cmd doesn't understand, so commands containing quotes broke.
+    // /s + outer quotes = cmd runs exactly the text between them.
+    if (shell.endsWith("cmd.exe") || shell === "cmd") return [this.shell, `/d /s /c "${command}"`];
     return [this.shell, ["-lc", command]]; // bash/zsh (tests, WSL)
   }
 
