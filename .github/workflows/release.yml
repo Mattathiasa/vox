@@ -71,13 +71,17 @@ jobs:
           Copy-Item -Recurse windows/src, windows/package.json, windows/package-lock.json, windows/README.md, LICENSE $out
           Copy-Item windows/*.cmd $out
           Copy-Item -Recurse web/remote "$out/public"
-          Push-Location $out
-          npm ci --omit=dev --no-audit --no-fund
-          Pop-Location
           New-Item -ItemType Directory -Force "$out/node" | Out-Null
           Copy-Item (Get-Command node).Source "$out/node/node.exe"
-          & "$out/node/node.exe" -e "require('@lydell/node-pty'); console.log('node-pty OK', process.version)"
+          Push-Location $out
+          npm ci --omit=dev --no-audit --no-fund
+          if ($LASTEXITCODE -ne 0) { Write-Output "::error::npm ci failed in the package folder"; exit 1 }
+          # Check from INSIDE the package (require resolves from the current folder), with the bundled node.
+          & ./node/node.exe -e "require('@lydell/node-pty'); console.log('node-pty OK', process.version)"
+          if ($LASTEXITCODE -ne 0) { Write-Output "::error::bundled node can't load node-pty"; exit 1 }
+          Pop-Location
           Compress-Archive -Path $out -DestinationPath Vox-Windows.zip
+          Get-Item Vox-Windows.zip | Select-Object Name, Length
       - uses: actions/upload-artifact@v4
         with: { name: windows, path: Vox-Windows.zip }
 
