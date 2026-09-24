@@ -739,7 +739,7 @@ extension AppState {
             lockedTool: lockedTool,
             pendingQuestion: pendingQuestion,
             busy: isBusy,
-            wake: .init(enabled: wakeEnabled, name: wakeName),
+            wake: .init(enabled: wakeEnabled, name: wakeName, phrases: wakeConfig.phrases),
             tools: toolNames,
             screens: screens.map { RemoteState.Screen(tool: $0.tool, text: $0.text, exited: $0.exited) },
             history: history.map {

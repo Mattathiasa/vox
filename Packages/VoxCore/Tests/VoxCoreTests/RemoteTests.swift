@@ -83,13 +83,14 @@ final class RemoteTests: XCTestCase {
 
     func testStateJSONShape() throws {
         let state = RemoteState(host: "mac", lockedTool: nil, pendingQuestion: "Kill?", busy: false,
-                                wake: .init(enabled: true, name: "Balcha"), tools: ["claude"],
+                                wake: .init(enabled: true, name: "Balcha", phrases: ["balcha", "bal cha"]), tools: ["claude"],
                                 screens: [.init(tool: "claude", text: "hi", exited: false)], history: [], log: [])
         let object = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(state)) as? [String: Any])
         XCTAssertTrue(object["lockedTool"] is NSNull, "nil is sent as null")
         XCTAssertEqual(object["platform"] as? String, "mac")
         XCTAssertEqual(object["pendingQuestion"] as? String, "Kill?")
         XCTAssertEqual((object["screens"] as? [[String: Any]])?.first?["tool"] as? String, "claude")
+        XCTAssertEqual((object["wake"] as? [String: Any])?["phrases"] as? [String], ["balcha", "bal cha"], "the phone's hands-free mode uses these")
     }
 
     func testLiveTypingInEngine() async {

@@ -65,7 +65,7 @@ export class Agent {
       lockedTool: this.engine.lockedTool,
       pendingQuestion: this.engine.pendingQuestion,
       busy: this.busy > 0,
-      wake: { enabled: false, name: "Balcha" },
+      wake: { enabled: false, name: "Balcha", phrases: this.config.wakeWord?.phrases || [] },
       tools: this.config.tools.map((t) => t.name),
       screens: this.engine.screens(lines),
       history: this.history,

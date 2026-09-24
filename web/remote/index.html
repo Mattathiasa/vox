@@ -42,6 +42,9 @@
         </div>
       </div>
       <div class="top-actions">
+        <button id="btn-wake" class="icon-btn glass" title="Hands-free: say “Balcha”" aria-label="Hands-free wake word" aria-pressed="false">
+          <svg viewBox="0 0 24 24"><path d="M6.5 9.5a5.5 5.5 0 0 1 11 0c0 3.2-3.2 4.2-3.2 7.3a3.3 3.3 0 0 1-6 1.8"/><path d="M9.6 10a2.4 2.4 0 0 1 4.8 0c0 1.3-1.3 1.8-1.3 3"/></svg>
+        </button>
         <button id="btn-speak" class="icon-btn glass" title="Spoken replies" aria-label="Spoken replies" aria-pressed="true">
           <svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg>
         </button>
@@ -54,7 +57,7 @@
     <section class="hero">
       <div id="orb" class="orb" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
       <div id="phase" class="pill glass">Ready</div>
-      <p id="transcript" class="transcript muted">Tap the mic and talk, or type below.</p>
+      <p id="transcript" class="transcript muted">Tap the mic and talk, or type below. Tap the ear for hands-free “Balcha”.</p>
       <div id="reply" class="banner glass" hidden></div>
     </section>
 
@@ -103,8 +106,8 @@
       </button>
       <div class="term-title"><span id="term-dot" class="dot"></span><b id="term-name"></b><span id="term-state" class="muted tiny"></span></div>
       <div class="seg" role="group" aria-label="Typing mode">
-        <button id="mode-line" class="on" type="button">Line</button>
-        <button id="mode-live" type="button">Live</button>
+        <button id="mode-live" class="on" type="button" title="Every key goes straight to the terminal">Live</button>
+        <button id="mode-line" type="button" title="Type a whole line, then send it">Line</button>
       </div>
     </header>
     <pre id="term-text" class="term-text" tabindex="0"></pre>
@@ -112,11 +115,12 @@
       <button data-key="Escape">esc</button><button data-key="Tab">⇥</button>
       <button data-key="Up">↑</button><button data-key="Down">↓</button>
       <button data-key="Left">←</button><button data-key="Right">→</button>
-      <button data-key="C-c">⌃C</button><button data-key="BSpace">⌫</button><button data-key="Enter">⏎</button>
+      <button data-key="C-c">⌃C</button><button data-key="C-d">⌃D</button><button data-key="C-l">⌃L</button>
+      <button data-key="BTab">⇤</button><button data-key="BSpace">⌫</button><button data-key="Enter">⏎</button>
     </div>
     <form id="term-form" class="term-input glass" autocomplete="off">
       <span class="prompt">›</span>
-      <input id="term-cmd" enterkeyhint="send" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Command…" aria-label="Terminal input">
+      <input id="term-cmd" enterkeyhint="enter" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" placeholder="Command…" aria-label="Terminal input">
       <button id="term-kill" type="button" class="chip danger">Kill</button>
     </form>
   </section>

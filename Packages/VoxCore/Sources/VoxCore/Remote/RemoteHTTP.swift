@@ -293,7 +293,11 @@ public struct RemoteState: Codable, Equatable, Sendable {
     public struct Wake: Codable, Equatable, Sendable {
         public var enabled: Bool
         public var name: String
-        public init(enabled: Bool, name: String) { self.enabled = enabled; self.name = name }
+        /// Spoken forms the phone's hands-free mode also accepts (config `wakeWord.phrases`).
+        public var phrases: [String]
+        public init(enabled: Bool, name: String, phrases: [String] = []) {
+            self.enabled = enabled; self.name = name; self.phrases = phrases
+        }
     }
 
     public var name = "Vox"

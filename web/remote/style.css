@@ -224,3 +224,12 @@ h2 { font-size: 20px; font-weight: 700; letter-spacing: -.01em; margin: 0 0 10px
 .pair-body { overflow: auto; padding: 8px 6px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
 .qr { width: min(70vw, 260px); height: auto; background: #fff; border-radius: 18px; padding: 12px; }
 .pair-body .log-list { width: 100%; flex: none; }
+
+/* Hands-free wake word */
+.icon-btn#btn-wake[aria-pressed="true"] { color: #fff; background: var(--accent); border-color: transparent; }
+.icon-btn#btn-wake[aria-pressed="true"].hearing { animation: pulse 1.1s ease-in-out infinite; }
+.orb.handsfree span { animation-duration: 4.5s; }
+.orb.handsfree::before { content: ""; position: absolute; inset: 6px; border-radius: 50%; border: 2px solid rgba(255,255,255,.35);
+  animation: breathe 2.8s ease-in-out infinite; z-index: 2; }
+@keyframes breathe { 0%, 100% { opacity: .25; transform: scale(.94); } 50% { opacity: .8; transform: scale(1); } }
+.term-text { cursor: text; }

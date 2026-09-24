@@ -363,6 +363,20 @@ Portfolio text: `docs/PORTFOLIO.md`. **Order matters: nothing goes public before
 
 Newest first. One entry per work session: date, who, what changed, **how it was verified**.
 
+### 2026-09-24 15:50 · Phase 8/9: hands-free “Balcha” in the web app, editable terminals (cloud session)
+
+- `web/remote/wake.js` (pure, tested): wake-word matching (VoxCore default phrases + browser mishearings + config `wakeWord.phrases`
+  sent as `state.wake.phrases`), bare yes/no for pending questions, and a typing diff for live terminals.
+- Web app (phone, and the Windows window, which is the same app): ear button = hands-free. Continuous Web Speech recognition that
+  restarts itself, "Balcha <command>" or "Balcha" … "<command>", bare "yes"/"no" answers confirmations, pauses while Vox speaks and
+  during push-to-talk, Screen Wake Lock while on. Works only while the page is on screen (phones cut the mic when locked).
+- Terminals: open in Live mode (remembered), tap the screen for the keyboard, diff-based typing so autocorrect/suggestions/IME work,
+  Backspace on an empty field still reaches the terminal, key bar adds ⌃D ⌃L ⇤ and keeps the keyboard up.
+- Windows: fixed a first-run crash when %APPDATA%\Vox didn't exist (main.js wrote the pairing code before creating the folder).
+- Verified: `npm test` 18/18; Playwright (Chromium, 390×844) against the real agent (`main.js --demo`, bash tool) with a scripted
+  SpeechRecognition: 20/20 checks (wake word, chatter ignored, config phrase, live typing, backspace, autocorrect, ⌃C, Line mode,
+  "balcha exit", kill → bare "yes"). Mac: `Verify.command` 189 tests + app build OK; Xcode Run. Real phone mic not tested (owner).
+
 ### 2026-09-24 10:55 · Phase 8: phone ↔ Mac connection fixes (cloud session)
 
 - Diagnosis (`scripts/Diagnose-Phone.command` → `.logs/phone.log`): Vox listening on 127.0.0.1:7788, ping 200, `/api/state` 401 without code,

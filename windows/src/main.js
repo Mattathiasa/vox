@@ -21,6 +21,7 @@ const { file: configFile, config } = loadConfig(process.env.VOX_CONFIG || undefi
 
 // Pairing code: %APPDATA%\Vox\remote-token (only readable by you on a normal Windows profile).
 const tokenFile = path.join(configDir(), "remote-token");
+fs.mkdirSync(path.dirname(tokenFile), { recursive: true });
 if (!fs.existsSync(tokenFile)) fs.writeFileSync(tokenFile, newPairingCode(), { mode: 0o600 });
 let code = fs.readFileSync(tokenFile, "utf8").trim();
 if (args.has("--new-code")) { code = newPairingCode(); fs.writeFileSync(tokenFile, code, { mode: 0o600 }); }
