@@ -11,6 +11,7 @@ struct MenuContent: View {
 
     var body: some View {
         Button("Show Command Panel") { panel.showForTyping() }
+        Button("Connect Phone…") { PhoneWindow.show(appState.remote) }
         Toggle("Listen for \"\(appState.wakeName)\"", isOn: Binding(
             get: { appState.wakeEnabled },
             set: { appState.setWakeEnabled($0) }
@@ -206,6 +207,12 @@ struct PhoneSettings: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
 
+            if !remote.enabled {
+                Section {
+                    Text("Turn on phone control to get a QR code for your phone.").foregroundStyle(.secondary)
+                    Button("Turn on phone control") { remote.setEnabled(true) }.buttonStyle(.borderedProminent)
+                }
+            }
             if remote.enabled {
                 Section("Pair a phone") { pairing }
                 Section("Connection check") { checks }
@@ -342,6 +349,29 @@ struct PhoneSettings: View {
         case .wifi: return "Home Wi-Fi only. If the router gives this Mac a new address, scan again (or use the .local link on iPhone)."
         case .bonjour: return "Home Wi-Fi only, and survives the Mac getting a new IP. Works on iPhone; many Android phones can't open .local names."
         }
+    }
+}
+
+/// "Connect Phone…": the Phone settings in their own window, brought to the front.
+/// (A menu-bar app's Settings window tends to open behind other apps, so the QR code was easy to miss.)
+@MainActor
+enum PhoneWindow {
+    private static var window: NSWindow?
+
+    static func show(_ remote: RemoteHost) {
+        let window = self.window ?? {
+            let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 560, height: 640),
+                                  styleMask: [.titled, .closable, .resizable, .miniaturizable], backing: .buffered, defer: false)
+            window.title = "Connect your phone"
+            window.isReleasedWhenClosed = false
+            window.contentView = NSHostingView(rootView: PhoneSettings(remote: remote).frame(minWidth: 520, minHeight: 520))
+            window.center()
+            self.window = window
+            return window
+        }()
+        window.level = .floating   // above the HUD panel
+        NSApp.activate(ignoringOtherApps: true)
+        window.makeKeyAndOrderFront(nil)
     }
 }
 

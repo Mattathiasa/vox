@@ -30,7 +30,7 @@ final class AppState: ObservableObject {
     @Published private(set) var mode: RouterMode = .idle
     @Published private(set) var pendingQuestion: String?
     @Published private(set) var output = ""
-    @Published private(set) var isBusy = falsefin
+    @Published private(set) var isBusy = false
     @Published private(set) var setupProblem: String?
     @Published private(set) var isListening = false
     @Published private(set) var heard = ""

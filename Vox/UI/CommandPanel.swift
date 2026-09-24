@@ -467,6 +467,7 @@ struct HUDView: View {
             }
             Spacer()
             wakeToggle
+            GlassIconButton(symbol: "iphone", help: "Connect your phone") { PhoneWindow.show(appState.remote) }
             GlassIconButton(symbol: "list.bullet.rectangle.portrait", help: "Activity log") { showLog.toggle() }
         }
         .frame(height: 36)

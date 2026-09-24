@@ -373,6 +373,9 @@ Newest first. One entry per work session: date, who, what changed, **how it was 
   "Turn on / off HTTPS link" (runs `tailscale serve --bg 7788` with fixed args, 15 s limit, shows the enable-HTTPS link if the tailnet needs it),
   firewall hint (`socketfilterfw --getglobalstate`, read-only). Info.plist: `NSLocalNetworkUsageDescription`, ATS `NSAllowsLocalNetworking`.
 - Verified: `scripts/Verify.command` → 189 core tests pass (5 new in PhoneLinksTests), xcodegen OK, app build OK. Phone-side check still owner-only.
+- Owner couldn't find the QR (Settings of a menu-bar app opens behind other windows): added **Connect Phone…** to the menu bar and an
+  iPhone button in the HUD title bar; both open a front-most "Connect your phone" window with a "Turn on phone control" button.
+  Also fixed a stray `falsefin` typed into AppState.swift in Xcode. Verified: Xcode Run → build succeeded, Vox running.
 
 ### 2026-09-24 09:45 · Phase 10: landing page, browser demo, workflows (cloud session)
 
