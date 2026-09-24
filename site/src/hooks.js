@@ -2,9 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { API, CHANGELOG_FALLBACK } from "./data.js";
 
 /** Typewriter over a list of phrases. */
-export function useTypewriter(list, { typeMs = 45, holdMs = 1800, eraseMs = 18 } = {}) {
+export function useTypewriter(list, { typeMs = 45, holdMs = 1800, eraseMs = 18, onChar, onDone } = {}) {
   const [text, setText] = useState("");
   const [index, setIndex] = useState(0);
+  const callbacks = useRef({ onChar, onDone });
+  callbacks.current = { onChar, onDone };
   useEffect(() => {
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     if (reduce) { setText(list[index]); const t = setTimeout(() => setIndex((i) => (i + 1) % list.length), 3000); return () => clearTimeout(t); }
@@ -16,8 +18,9 @@ export function useTypewriter(list, { typeMs = 45, holdMs = 1800, eraseMs = 18 }
       if (cancelled) return;
       i += 1;
       setText(target.slice(0, i));
+      callbacks.current.onChar?.();
       if (i < target.length) timers.push(setTimeout(type, typeMs));
-      else timers.push(setTimeout(erase, holdMs));
+      else { callbacks.current.onDone?.(); timers.push(setTimeout(erase, holdMs)); }
     };
     const erase = () => {
       if (cancelled) return;
