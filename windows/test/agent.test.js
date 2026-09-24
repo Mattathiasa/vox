@@ -62,7 +62,10 @@ test("run a tool, type into it, see its screen, kill it with a yes", async () =>
 
   await api("tools/echoer/type", { text: "live" });
   await api("tools/echoer/key", { key: "Enter" });
-  assert.ok(await until(async () => ((await api("state")).json.screens[0]?.text.match(/live/g) || []).length >= 2));
+  // Mac/Linux: the tty echoes "live" and cat prints it back (2). Windows ConPTY + findstr shows it once.
+  const expected = win ? 1 : 2;
+  assert.ok(await until(async () => ((await api("state")).json.screens[0]?.text.match(/live/g) || []).length >= expected),
+    `screen after live typing:\n${(await api("state")).json.screens[0]?.text}`);
   const bad = await api("tools/echoer/key", { key: "rm -rf" });
   assert.equal(bad.json.events[0].kind, "error");
 
