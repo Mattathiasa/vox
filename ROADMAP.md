@@ -23,10 +23,14 @@ Never mark `[x]` for something you could not run. Use `[w]` and say why in the L
 
 - **FEATURE FREEZE lifted for Phases 8–9 by the owner (2026-09-24 09:03):** "make it controllable from a phone
   web app, and a Windows app for my gaming PC". Earlier phases' hands-on boxes are still open (owner testing).
-- **Current phases: 8 (phone remote) and 9 (Windows).** Web app + Windows agent are built and tested in the
+- **Current phases: 8 (phone remote), 9 (Windows agent) and 11 (Windows desktop app).** Web app + Windows agent are built and tested in the
   cloud (Node: 13 tests incl. real pseudo-terminals over HTTP; Playwright screenshots of the phone UI).
   **Swift side now compiled and tested on the Mac** (184 tests incl. RemoteTests + GrammarParityTests; app builds;
   server answers `/api/ping` on `127.0.0.1:7788` only). Settings → Phone UI itself not clicked through yet.
+- **Phase 11 (Windows desktop app) started 2026-09-24 — W0 done on the owner's Windows 11 PC:** `npm test` 18/18 with
+  real ConPTY; "run claude" launches Claude Code in `D:\Projects`; math/volume/type verified through the Remote API;
+  spikes done (Electron `webkitSpeechRecognition` errors → use on-device sherpa-onnx, which loads on Node 24 with
+  KeywordSpotter/OnlineRecognizer; Electron acrylic/mica accepted). **Next: W1 Electron desktop shell.** See Phase 11 + the newest Log entry.
 - **Next (Claude Code on the Mac, in ~/Projects/vox), in order:**
   1. ~~swift test / parity / scripts/test.sh / curl ping~~ done 2026-09-24 (see Log).
   2. Owner: Settings → Phone → check the toggle, QR and code show; open `http://127.0.0.1:7788/#pair=<code>`
@@ -35,7 +39,8 @@ Never mark `[x]` for something you could not run. Use `[w]` and say why in the L
   4. Windows: `scripts/Package-Windows.command` → copy `dist/Vox-Windows.zip` to the PC → `Install-Vox.cmd`.
 - **How agents verify on this Mac:** `scripts/Verify.command` (unit tests + app build → `.logs/verify.log`),
   `scripts/Verify-Tools.command` (real tmux + tools → `.logs/selftest.log`), `cd windows && npm test`.
-- **Blockers:** agents can't see Vox's own window; nobody has run the Windows agent on Windows yet.
+- **Blockers:** agents can't see Vox's own window (need the owner's eyes for GUI/HUD visuals); Electron's binary
+  download was blocked in this environment (spikes used the cached v39 build). The Windows agent now runs on Windows.
 
 ### Progress at a glance
 
@@ -50,7 +55,8 @@ Never mark `[x]` for something you could not run. Use `[w]` and say why in the L
 | 7a HUD | done | builds | owner reviewing |
 | 5, 6, 7 | see Log (5 parsing, 6 LLM fallback, 7 settings done by another session) | pass (176) | — |
 | 8 Phone remote | done | web: Playwright; Swift: 184 tests pass, app builds, ping on 127.0.0.1:7788 | pair a phone |
-| 9 Windows | agent done | 13 Node tests on Mac + Swift parity 95/95 | install on the PC |
+| 9 Windows | agent done | 18/18 Node on real Windows (real ConPTY) + Swift parity 95/95 | ran on the PC: "run claude" in D:\Projects, volume/math/type OK (W0) |
+| 11 Windows desktop | W0 done | Electron/sherpa spikes (see Log) | on the PC: W1 Electron shell next |
 
 ## Phase overview
 
@@ -69,6 +75,7 @@ Never mark `[x]` for something you could not run. Use `[w]` and say why in the L
 | 8 | Phone remote: web controller for the Mac (PWA, Tailscale) | `[~]` | 3–4 d |
 | 9 | Vox for Windows (Node agent, native terminals, same phone app) | `[~]` | 5–7 d |
 | 10 | Public release + portfolio: CI, GitHub, browser demo, landing page, signed downloads | `[ ]` | 4–6 d |
+| 11 | Windows desktop app: Electron shell, HUD + xterm.js, hotkey, on-device voice, full parity | `[~]` W0 done | 8–12 d |
 
 ---
 
@@ -330,7 +337,7 @@ Code in `windows/` (plain modern JavaScript, Node 20+, `node --test`). The gramm
 shared phrase list `shared/grammar-cases.json` is checked by **both** the Swift tests and the Node tests so the two can't drift silently.
 
 - [x] Port: tokenizer, phrase matcher, tool/project/exit/interrupt/help/tell grammar, router state machine, safety policy, config
-- [~] Terminals: `TerminalHost` (node-pty/ConPTY) with the same surface as TmuxAdapter (start, type, submit, key, capture, resize, kill); screen buffer via a small VT parser
+- [x] Terminals: `TerminalHost` (node-pty/ConPTY) with the same surface as TmuxAdapter (start, type, submit, key, capture, resize, kill); screen buffer via a small VT parser — verified on the PC 2026-09-24 (claude launched in D:\Projects, live-typed, captured with colour, killed; see W0 Log)
 - [w] Desktop (PowerShell, text passed via environment, never in the command string): open app/site/folder, search, close app, type text, keys, volume, media, lock, time/date/battery/math answers
 - [x] Server: same Remote protocol as the Mac, same `web/remote/` app; token in `%APPDATA%\Vox\remote-token`
 - [w] Windows UI: the web app opened as an Edge app window on `http://localhost:7788` (mic works on localhost), tray-less first version
@@ -339,8 +346,8 @@ shared phrase list `shared/grammar-cases.json` is checked by **both** the Swift 
 - [ ] Later: IDE bridge on Windows (Antigravity/Kiro), on-device wake word (Vosk), tray icon
 
 **Verification**
-- [x] `node --test` passes in the cloud (grammar, router, safety, protocol, pty with a fake)
-- [ ] Owner's PC: install script runs, "run claude" works, phone controls it over Tailscale
+- [x] `node --test` passes in the cloud (grammar, router, safety, protocol, pty with a fake) — and 18/18 on real Windows with actual ConPTY (2026-09-24)
+- [~] Owner's PC: "run claude" works (started Claude Code in D:\Projects, verified 2026-09-24); `npm ci` + node-pty load verified. Still to do: full `Install-Vox.cmd` shortcuts, phone over Tailscale.
 - [x] Parity tests pass on both sides (Swift 95/95 cases, Node 13/13, 2026-09-24)
 
 ## Phase 10: Public release + portfolio
@@ -359,9 +366,82 @@ Portfolio text: `docs/PORTFOLIO.md`. **Order matters: nothing goes public before
 - [ ] First-run onboarding for strangers: permissions walkthrough (mic, speech, accessibility), tool picker instead of hand-editing JSON
 - [ ] 60–90 s demo video + screenshots for the portfolio
 
+## Phase 11: Windows desktop app (full parity with the Mac app)
+
+Owner's request 2026-09-24 (`windows/PROMPT.md`): turn `windows/` from a Node agent + browser window into a
+**complete Windows desktop app** — Electron shell, glass HUD with xterm.js terminals, global hotkey, push-to-talk,
+on-device wake word "Balcha", every desktop command, IDE terminals, LLM fallback, settings, phone, and an installer.
+Do each milestone in order, verify on the owner's Windows 11 PC (build 26200), keep CI green on all three OSes.
+Marks: `[x]` = verified on this PC, `[w]` = written but not verifiable here, `[~]` = in progress, `[ ]` = not started.
+
+- [x] **W0 Baseline + spikes.** `npm ci && npm test` green (18/18, real ConPTY) on this PC; baseline commands
+      verified through the Remote API against a headless `node src/main.js` (run claude in D:\Projects, kill-with-yes,
+      math, open steam, set volume to 30, type+enter). Spikes reported in the Log: (a) Electron
+      `webkitSpeechRecognition` → error "network", don't use; (b) `sherpa-onnx-node` loads on Node 24 and exposes
+      KeywordSpotter/OnlineRecognizer/Vad → on-device voice viable; (c) Electron acrylic/mica accepted on this build.
+- [ ] **W1 Desktop shell.** `windows/desktop/` Electron app spawns the engine on a bundled `node.exe` (restart on
+      crash, kill terminals on quit), single-instance lock, tray icon (idle/listening/busy/needs-OK) + menu, launch at
+      login. Replaces the Edge `--app` window from `main.js`/`Start-Vox.cmd`; keep `--no-window` for headless.
+- [ ] **W2 HUD** (parity with `CommandPanel.swift`). Frameless always-on-top Acrylic/Mica window; status header,
+      wake pill, orb, command field, confirm bar, reply banner, history strip, activity log, and a 1–4 tile terminal
+      grid using **xterm.js** over a new localhost WebSocket raw-PTY stream (`GET /api/tools/<tool>/stream`, token in the
+      first message). Add the WebSocket route to the Remote protocol table; tests: auth, bad token closes, input/output/resize.
+- [ ] **W3 Hotkey + push-to-talk.** Global Alt+Space (fallback Ctrl+Alt+Space if taken), tap = show HUD, hold = talk
+      (key-up via `uiohook-napi`, else VAD tap-to-talk); renderer mic → engine sherpa-onnx ASR → `perform(text, spoken)`.
+      Tests: audio-frame→transcript with a fixture WAV, hold/tap state machine (pure).
+- [ ] **W4 Always-on wake word "Balcha".** Port `WakeWordTracker`/`Detector` timing from `Voice/WakeWord.swift`, reuse
+      `web/remote/wake.js` matchers, on-device KWS, low idle CPU (report %), pause while speaking, survive sleep/mic replug.
+- [ ] **W5 Desktop parity.** `desktop-win.js` + `engine.js` handle every `DesktopCommand` case, each verified by hand +
+      fake-desktop tests (apps open/focus/quit/hide, web/site search, keys/typing, media, volume set N, answers, timers,
+      reminders as toasts, notes, dark mode/screen off/lock, send-to-app, games via Steam/Start-menu). Fix the W0 GUI-typing focus race here.
+- [ ] **W6 IDE terminals.** Cross-platform `vox-bridge` (bridge file in `%APPDATA%\Vox\bridges`), port `IDEBridge.swift`
+      to JS, `Install-IDE-Bridge.cmd`. Verify "open antigravity with 3 terminals running claude, freebuff and npm run dev".
+- [ ] **W7 LLM fallback.** Port `LLMAdapter`/`LLMTypes`: Claude (key via Electron `safeStorage`) + Ollama; validate the
+      model's intent against the same allowed actions, run through router + safety; hostile-output tests refuse shell/unknown tools.
+- [ ] **W8 Settings + phone.** Settings window (General/Tools/Projects/Apps/Phone/LLM) writing `%APPDATA%\Vox\config.json`
+      with hot-reload; Phone tab = the Mac's Connect Phone window (QR, reachability, Tailscale HTTPS button). Tray "Connect Phone…" opens it.
+- [ ] **W9 Packaging + release.** `electron-builder` NSIS per-user **Vox-Setup.exe** (+ portable **Vox-Windows.zip**),
+      bundling engine + `node.exe` + node-pty + speech models (or first-run download with SHA-256). Update `release.yml`
+      windows job, `site/src/data.js`, README, CHANGELOG; keep CI green on macOS/Windows/Linux. Smoke-test the installer.
+- [ ] **W10 Final verification** — the "done" bar in `windows/PROMPT.md` §W10, all on this PC.
+
 ## Log
 
 Newest first. One entry per work session: date, who, what changed, **how it was verified**.
+
+### 2026-09-24 · Phase 11 W0: Windows baseline verified on the owner's PC + spikes (on Windows)
+
+First run of the Windows agent on real Windows (Windows 11 Home, build 26200, Node v24.15.0).
+- `cd windows && npm ci && npm test` → **18/18 pass**, including the real-ConPTY test: `@lydell/node-pty`'s
+  prebuilt binary loads and drives a live pseudo-terminal on Node 24 (no build tools needed).
+- Baseline commands, driven through the Remote API against a headless `node src/main.js --no-window` on port 7799
+  (the real server → agent → engine path the phone/UI use), with the owner's config (tools' `defaultDirectory` = `D:\Projects`):
+  - **"run claude"** → started Claude Code v2.1.186 in **D:\Projects** (confirmed from the TUI header), rendered in the
+    headless xterm with full box-drawing/colour over `/api/state`; live-typing "hello vox" via `/type` showed on its input line.
+  - **"kill claude"** → asks *"Kill the claude session? … Say yes to confirm."*; `/confirm {yes}` → "Killed claude." (0 screens). Safety confirm flow works.
+  - **"what's 12 times 8"** → "That's 96."; "15 percent of 80" → "That's 12." (from idle).
+  - **"open steam"** → routed to the app catalog (`steam://open/main`) via `Start-Process`, no error.
+  - **"set volume to 30"** (from idle) → "Volume 30%."; confirmed the system master volume actually read **30 %** afterwards (IAudioEndpointVolume).
+  - **"type voxcheck123 and press enter"** → typed into the foreground app (Notepad) + Enter via SendKeys, verified by reading
+    the text back with UI Automation. Two caveats logged for W5: (1) the first ~2 keystrokes were dropped in a focus race
+    (landed as "xcheck123") — add a short settle delay / foreground guard before GUI typing; (2) typing goes to whatever is
+    frontmost — it landed in a Notepad already holding the owner's commit message, which I then restored exactly (369 chars).
+  - `/api/ping` (no auth) → 200; `/api/state` without a Bearer code → 401. Router pass-through confirmed: after "run claude" the
+    router locks onto claude, so a bare "set volume to 30" was sent to claude until `/api/exit` (by design — a desktop command while locked needs the "vox" prefix).
+- **Spikes** (throwaway scratch project, not committed):
+  - (a) Electron 39.2.7 (Chromium 142) renderer: `webkitSpeechRecognition` exists but `.start()` fires `onerror "network"`
+    (Electron ships no Google Speech key) → **confirmed unusable, as expected**. Use on-device ASR.
+  - (b) `sherpa-onnx-node@1.13.8` loads on Node v24 (N-API abi 137) in ~1.15 s and exports **KeywordSpotter** (KWS "Balcha"),
+    **OnlineRecognizer** (streaming ASR), **Vad** and OfflineTts; Windows prebuilt via `sherpa-onnx-win-x64` (~23 MB, N-API →
+    no per-Node rebuild). **On-device voice is viable.** Model-backed KWS/ASR + latency/CPU numbers deferred to W3/W4 (models not fetched here).
+  - (c) Electron `backgroundMaterial: 'acrylic'`/`'mica'` and `setBackgroundMaterial(...)` are accepted with no error on
+    build 26200 (visual confirmation is the owner's, W2). Note: Electron's binary download was blocked in this environment,
+    so the spikes used the cached v39.2.7 build (v44 wouldn't download) — the two APIs tested are unchanged in v44.
+- Did **not** run the literal `Install-Vox.cmd` end to end: a packaged Vox (from `Downloads\Vox-Windows`) was already
+  listening on 7788, and the installer only adds Start-menu/desktop shortcuts and opens an Edge `--app` window (both replaced
+  by W1). Its substance — the Node/node-pty check and `npm install` — is the `npm ci` + require test above.
+- ROADMAP: added **Phase 11 (W0–W10)** plan; marked Phase 9 **Terminals `[x]`** (verified on the PC) and noted the Phase 9
+  `node --test` box is green on real Windows too.
 
 ### 2026-09-24 15:50 · Phase 8/9: hands-free “Balcha” in the web app, editable terminals (cloud session)
 
