@@ -36,7 +36,8 @@ patterns (push, delete, rm, force…) and every kill needs a "yes"; the phone ne
 ## Voice on Windows
 
 The window uses the browser's speech recognition (Edge/Chrome). That sends audio to Microsoft/Google for
-recognition, unlike the Mac's on-device recognizer. The always-on "Balcha" wake word is not on Windows yet.
+recognition, unlike the Mac's on-device recognizer. Tap the **ear** button for hands-free: say "Balcha, run claude"
+while the Vox window is open (not minimized). A plain "yes" or "no" answers Vox's confirmation questions.
 
 ## Develop
 
