@@ -145,7 +145,7 @@ from `windows/src/server.js`. Default port **7788**. The page polls; there are n
 |---|---|---|---|
 | `GET /`, `/app.js`, `/style.css`, `/manifest.webmanifest`, `/icon.svg` | no | | web app files |
 | `GET /api/ping` | no | | `{name, platform, version}` |
-| `GET /api/state?lines=60` | yes | | `RemoteState`: `host, platform, version, lockedTool, pendingQuestion, busy, wake{enabled,name}, tools[], screens[{tool,text,exited}], history[{command,kind,reply,spoken,source}], log[{kind,text,time}]` |
+| `GET /api/state?lines=60` | yes | | `RemoteState`: `host, platform, version, lockedTool, pendingQuestion, busy, wake{enabled,name,phrases}, tools[], screens[{tool,text,exited}], history[{command,kind,reply,spoken,source}], log[{kind,text,time}]` |
 | `POST /api/command` | yes | `{text, spoken?, source?}` | `{events:[{kind,message}]}` (same router + safety as voice) |
 | `POST /api/confirm` | yes | `{yes}` | answers the pending question only ("Nothing to confirm." otherwise) |
 | `POST /api/exit` | yes | | leave pass-through |
