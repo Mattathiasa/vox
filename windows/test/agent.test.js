@@ -8,12 +8,15 @@ import { AppCatalog } from "../src/apps-win.js";
 import { createServer, Lockout } from "../src/server.js";
 import { normalizeConfig } from "../src/config.js";
 
-const config = normalizeConfig({ tools: [{ name: "echoer", aliases: ["echo tool"], command: "cat", defaultDirectory: "/tmp" }] });
+import os from "node:os";
+// A tool that echoes its input: `cat` on Mac/Linux, `findstr` on Windows (runs under ConPTY in CI).
+const win = process.platform === "win32";
+const config = normalizeConfig({ tools: [{ name: "echoer", aliases: ["echo tool"], command: win ? 'findstr "^"' : "cat", defaultDirectory: os.tmpdir() }] });
 const calls = [];
 const fake = new Proxy({}, { get: (_, name) => async (...a) => { calls.push([name, ...a]); return name === "quitApp" ? true : ""; } });
 
 async function start() {
-  const terminals = new TerminalHost({ shell: "/bin/bash" });
+  const terminals = new TerminalHost({ shell: win ? "cmd.exe" : "/bin/bash" });
   const engine = new VoxEngine({ config, terminals, desktop: fake, apps: new AppCatalog([{ name: "Steam", target: "steam://open", key: "steam" }]), pause: async () => {} });
   const agent = new Agent({ engine, config, host: "test-pc" });
   const server = createServer({ agent, code: () => "secret-code", lockout: new Lockout({ limit: 3 }) });

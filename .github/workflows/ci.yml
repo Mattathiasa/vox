@@ -1,0 +1,43 @@
+# Runs on every push and pull request. Nothing here signs or publishes anything.
+name: CI
+on:
+  push:
+  pull_request:
+
+jobs:
+  mac:
+    # The app uses macOS 26 SDK APIs (Liquid Glass) behind #available, so it needs Xcode 26+.
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - run: brew install xcodegen tmux
+      - name: VoxCore tests (incl. grammar parity with Windows)
+        run: cd Packages/VoxCore && swift test
+      - name: App build (unsigned)
+        run: |
+          xcodegen generate
+          xcodebuild -project Vox.xcodeproj -scheme Vox -configuration Debug -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO build -quiet
+
+  windows:
+    # Real ConPTY: the agent tests start a pseudo-terminal and type into it.
+    runs-on: windows-latest
+    defaults: { run: { working-directory: windows } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm ci
+      - run: npm test
+
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Windows agent tests (grammar parity, HTTP, bash pseudo-terminals)
+        run: cd windows && npm ci && npm test
+      - name: Mac's embedded web app is up to date
+        run: node scripts/embed-web.mjs --check
+      - name: Landing page + demo build
+        run: cd site && npm ci && npm run build

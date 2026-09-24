@@ -1,0 +1,49 @@
+# Push a tag like v0.1.0 to build unsigned beta downloads and attach them to a GitHub Release:
+#   Vox-mac.zip      (ad-hoc signed; users choose "Open Anyway" once in System Settings)
+#   Vox-Windows.zip  (Node agent; Install-Vox.cmd)
+# The landing page links to releases/latest/download/<name>, so names must stay the same.
+name: Release
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  mac:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - run: brew install xcodegen
+      - name: Build Release (unsigned) and ad-hoc sign
+        run: |
+          xcodegen generate
+          xcodebuild -project Vox.xcodeproj -scheme Vox -configuration Release -destination 'platform=macOS' \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO build -quiet
+          APP=build/Build/Products/Release/Vox.app
+          codesign --force --deep --options runtime --entitlements Vox/Vox.entitlements -s - "$APP"
+          ditto -c -k --keepParent "$APP" Vox-mac.zip
+      - uses: actions/upload-artifact@v4
+        with: { name: mac, path: Vox-mac.zip }
+
+  windows:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: scripts/package-windows.sh && mv dist/Vox-Windows.zip .
+      - uses: actions/upload-artifact@v4
+        with: { name: windows, path: Vox-Windows.zip }
+
+  publish:
+    needs: [mac, windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { merge-multiple: true }
+      - name: Create the release
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
+          gh release create "${GITHUB_REF_NAME}" Vox-mac.zip Vox-Windows.zip --repo "${GITHUB_REPOSITORY}" \
+            --title "Vox ${GITHUB_REF_NAME} (beta, unsigned)" --prerelease \
+            --notes "Unsigned beta. Mac: unzip, move Vox to Applications, open it once, then System Settings → Privacy & Security → Open Anyway. Windows: unzip, run Install-Vox.cmd (SmartScreen: More info → Run anyway). Phone: see the README."

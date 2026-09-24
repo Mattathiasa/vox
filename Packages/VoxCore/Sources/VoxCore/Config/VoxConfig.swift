@@ -214,13 +214,8 @@ public struct VoxConfig: Codable, Equatable, Sendable {
             ToolConfig(name: "opencode", aliases: ["open code"],
                        command: "opencode", defaultDirectory: "~/Projects")
         ],
-        projects: [
-            ProjectConfig(name: "vox", aliases: ["box", "this project"], path: "~/Projects/vox"),
-            ProjectConfig(name: "chirp", aliases: ["chip"], path: "~/Projects/chirp"),
-            ProjectConfig(name: "decrypt", aliases: ["bulls and cows"], path: "~/Projects/decrypt"),
-            ProjectConfig(name: "cbs", aliases: ["c b s", "bible study", "cbs study sessions"],
-                          path: "~/Projects/cbs-study-sessions")
-        ],
+        // Add your own: { "name": "chirp", "aliases": ["chip"], "path": "~/Projects/chirp" }
+        projects: [],
         llm: LLMConfig(enabled: true, provider: .apple)
     )
 }
