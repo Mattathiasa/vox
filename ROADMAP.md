@@ -349,19 +349,31 @@ Owner's request 2026-09-24 09:32: show Vox in the portfolio (title, short/long d
 git repo, live landing page with web app + Mac/Windows downloads, challenges) and let anyone use it.
 Portfolio text: `docs/PORTFOLIO.md`. **Order matters: nothing goes public before Phases 8–9 pass on real hardware.**
 
-- [ ] Hygiene: make config/starter generic (no owner projects), LICENSE (MIT), README with GIF + install steps, no secrets in repo (API keys are Keychain-only, pairing codes never committed)
-- [ ] CI (GitHub Actions): `macos-latest` → `swift test` + unsigned `xcodebuild`; `windows-latest` → `npm test` (real ConPTY!); `ubuntu-latest` → `npm test` + embed check
+- [x] Hygiene: make config/starter generic (no owner projects), LICENSE (MIT), README with GIF + install steps, no secrets in repo (API keys are Keychain-only, pairing codes never committed)
+- [w] CI (GitHub Actions, `.github/workflows/ci.yml`; runs on first push): `macos-latest` → `swift test` + unsigned `xcodebuild`; `windows-latest` → `npm test` (real ConPTY!); `ubuntu-latest` → `npm test` + embed check
 - [ ] Push to `github.com/Mattathiasa/vox` (public)
-- [ ] Browser demo: `web/remote` in demo mode with an in-browser simulated agent built from `windows/src` (parser/router run unchanged in the browser; fake terminals, fake desktop)
-- [ ] Landing page (hero video, Try it, downloads, phone setup, security section), deployed on Vercel or GitHub Pages
-- [ ] Mac download: Developer ID signing + notarization (needs the paid Apple Developer Program), `.dmg`, GitHub Release
-- [ ] Windows download: bundle Node (single-executable or Inno Setup installer), GitHub Release; unsigned → SmartScreen warning unless code-signed
+- [x] Browser demo (`site/src/demo`, verified with Playwright): `web/remote` in demo mode with an in-browser simulated agent built from `windows/src` (parser/router run unchanged in the browser; fake terminals, fake desktop)
+- [w] Landing page (`site/`, React + Vite, GitHub Pages via `pages.yml`; hero video still to record), Try it, downloads, phone setup, security section), deployed on Vercel or GitHub Pages
+- [w] Mac download: **owner has no paid Apple Developer Program** → unsigned ad-hoc `Vox-mac.zip` via `release.yml` + "Open Anyway" steps; (Developer ID signing + notarization (needs the paid Apple Developer Program), `.dmg`, GitHub Release
+- [w] Windows download: `Vox-Windows.zip` via `release.yml` (needs Node installed); later: bundle Node (single-executable or Inno Setup installer), GitHub Release; unsigned → SmartScreen warning unless code-signed
 - [ ] First-run onboarding for strangers: permissions walkthrough (mic, speech, accessibility), tool picker instead of hand-editing JSON
 - [ ] 60–90 s demo video + screenshots for the portfolio
 
 ## Log
 
 Newest first. One entry per work session: date, who, what changed, **how it was verified**.
+
+### 2026-09-24 09:45 · Phase 10: landing page, browser demo, workflows (cloud session)
+
+- Owner: GitHub Pages for the site; no paid Apple Developer Program (so Mac builds ship unsigned, ad-hoc signed).
+- `site/`: React + Vite landing page (hero with a live phone-frame demo, features, how it works, security, downloads, build from source).
+  `site/src/demo`: simulated computer running the real grammar from `windows/src` behind the unchanged `web/remote` app (fetch is swapped).
+- `.github/workflows`: `ci.yml` (macos-26 swift test + app build; windows-latest npm test with real ConPTY; ubuntu npm test, embed check, site build),
+  `pages.yml`, `release.yml` (tag `v*` → `Vox-mac.zip`, `Vox-Windows.zip`). `windows/src/defaults.js` split out for the browser.
+  Generic starter config (no personal projects), MIT LICENSE, public README, `docs/PORTFOLIO.md` URLs.
+- Verified: `npm test` 14/14; `npm run build` OK; Playwright (1366×860 landing, 390×844 demo): "run claude in chirp and add tests" streams the fake reply,
+  no console errors. **Not verified:** the workflows (never run: nothing pushed), the macos-26 runner label, Windows ConPTY in CI.
+- Next: owner approves pushing to GitHub → Settings → Pages → Source: GitHub Actions → watch CI → tag `v0.1.0`.
 
 ### 2026-09-24 10:00 · Phases 8 + 9: first Swift compile of the remote + parity (Claude Code on the Mac)
 
