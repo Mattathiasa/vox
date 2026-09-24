@@ -26,6 +26,13 @@
 	<true/>
 	<key>NSAppleEventsUsageDescription</key>
 	<string>Vox controls apps like Terminal and Safari when you ask it to.</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Vox serves its phone remote on your home Wi-Fi when you allow it, and checks that your phone can reach it.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Vox listens while you hold the push-to-talk key.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>

@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import ServiceManagement
+import SystemConfiguration
 import VoxCore
 
 struct LogLine: Identifiable, Equatable {
@@ -29,7 +30,7 @@ final class AppState: ObservableObject {
     @Published private(set) var mode: RouterMode = .idle
     @Published private(set) var pendingQuestion: String?
     @Published private(set) var output = ""
-    @Published private(set) var isBusy = false
+    @Published private(set) var isBusy = falsefin
     @Published private(set) var setupProblem: String?
     @Published private(set) var isListening = false
     @Published private(set) var heard = ""
@@ -651,29 +652,29 @@ final class RemoteHost: ObservableObject {
 
     func syncCode() { currentCode?.set(code) }
 
-    // MARK: URLs for pairing
+    // MARK: Links for pairing
 
-    /// Wi-Fi addresses (only useful when "Allow on home Wi-Fi" is on).
-    var lanURLs: [String] {
-        guard allowLAN else { return [] }
-        return Self.ipv4Addresses().map { "http://\($0):\(Self.port)/#pair=\(code)" }
+    /// Addresses a phone can use, best first (Tailscale HTTPS, then home Wi-Fi when allowed).
+    func links(tailscale: Tailscale.Status) -> [PhoneLink] {
+        PhoneLinks.make(code: code, port: Self.port, allowLAN: allowLAN,
+                        tailscaleName: tailscale.name, tailscaleServing: tailscale.serving,
+                        interfaces: Self.ipv4Interfaces(), localHostName: Self.localHostName())
     }
 
-    var localURL: String { "http://127.0.0.1:\(Self.port)/#pair=\(code)" }
+    /// Bonjour name ("Matts-MacBook-Pro"), which iPhones resolve as <name>.local on the home Wi-Fi.
+    static func localHostName() -> String? { SCDynamicStoreCopyLocalHostName(nil) as String? }
 
-    static func ipv4Addresses() -> [String] {
-        var result: [String] = []
+    static func ipv4Interfaces() -> [(name: String, address: String)] {
+        var result: [(name: String, address: String)] = []
         var pointer: UnsafeMutablePointer<ifaddrs>?
         guard getifaddrs(&pointer) == 0, let first = pointer else { return [] }
         defer { freeifaddrs(pointer) }
         for ifa in sequence(first: first, next: { $0.pointee.ifa_next }) {
-            guard let addr = ifa.pointee.ifa_addr, addr.pointee.sa_family == UInt8(AF_INET) else { continue }
-            let name = String(cString: ifa.pointee.ifa_name)
-            guard name.hasPrefix("en") || name.hasPrefix("utun") else { continue }
+            guard let addr = ifa.pointee.ifa_addr, addr.pointee.sa_family == UInt8(AF_INET),
+                  (ifa.pointee.ifa_flags & UInt32(IFF_UP)) != 0 else { continue }
             var host = [CChar](repeating: 0, count: Int(NI_MAXHOST))
             if getnameinfo(addr, socklen_t(addr.pointee.sa_len), &host, socklen_t(host.count), nil, 0, NI_NUMERICHOST) == 0 {
-                let ip = String(cString: host)
-                if !ip.hasPrefix("127.") { result.append(ip) }
+                result.append((String(cString: ifa.pointee.ifa_name), String(cString: host)))
             }
         }
         return result

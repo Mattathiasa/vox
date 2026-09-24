@@ -39,6 +39,9 @@ targets:
         NSMicrophoneUsageDescription: Vox listens while you hold the push-to-talk key.
         NSSpeechRecognitionUsageDescription: Vox turns your speech into commands on this Mac.
         NSAppleEventsUsageDescription: Vox controls apps like Terminal and Safari when you ask it to.
+        NSLocalNetworkUsageDescription: Vox serves its phone remote on your home Wi-Fi when you allow it, and checks that your phone can reach it.
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true   # the Phone tab pings http://<this Mac's Wi-Fi IP>:7788 to test the link
     entitlements:
       path: Vox/Vox.entitlements
       properties:

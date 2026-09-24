@@ -77,7 +77,7 @@ docs/ARCHITECTURE.md     Design, state machine, decisions log
 1. Spoken or LLM-produced text is **never** put into a shell command string.
    It reaches tools only as literal keystrokes (`send-keys -l`) or structured API messages.
 2. Vox itself only ever *executes* commands from the user's config (`tools[].command`, in tmux) and fixed system
-   tools (pmset). Text for the front app or an IDE terminal is *typed*, where the owner can see it, and
+   tools (pmset; `tailscale serve` and `socketfilterfw --getglobalstate` from the Phone tab, fixed arguments, only on the owner's click/open). Text for the front app or an IDE terminal is *typed*, where the owner can see it, and
    anything matching `confirmPatterns` needs a "yes" first.
 3. Anything matching `confirmPatterns`, and every kill, requires a spoken/clicked "yes".
 4. Unknown project or tool → refuse and say so. Never guess.

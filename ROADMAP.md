@@ -363,6 +363,17 @@ Portfolio text: `docs/PORTFOLIO.md`. **Order matters: nothing goes public before
 
 Newest first. One entry per work session: date, who, what changed, **how it was verified**.
 
+### 2026-09-24 10:55 · Phase 8: phone ↔ Mac connection fixes (cloud session)
+
+- Diagnosis (`scripts/Diagnose-Phone.command` → `.logs/phone.log`): Vox listening on 127.0.0.1:7788, ping 200, `/api/state` 401 without code,
+  but **no route for a phone**: "Allow on home Wi-Fi" off (192.168.100.10:7788 refused) and Tailscale not installed.
+- `VoxCore/Remote/PhoneLinks.swift`: pure link builder (Tailscale HTTPS only when `tailscale serve` really proxies 7788; en* Wi-Fi IPs;
+  `<LocalHostName>.local` for iPhones, survives DHCP changes; Tailscale 100.x over http; skips link-local and other VPN utuns) + serve-status/enable-link/DNS parsing.
+- Phone tab rewritten: live checks (server, Wi-Fi, Tailscale) with a real `/api/ping` to every link, QR link picker, "Use home Wi-Fi now",
+  "Turn on / off HTTPS link" (runs `tailscale serve --bg 7788` with fixed args, 15 s limit, shows the enable-HTTPS link if the tailnet needs it),
+  firewall hint (`socketfilterfw --getglobalstate`, read-only). Info.plist: `NSLocalNetworkUsageDescription`, ATS `NSAllowsLocalNetworking`.
+- Verified: `scripts/Verify.command` → 189 core tests pass (5 new in PhoneLinksTests), xcodegen OK, app build OK. Phone-side check still owner-only.
+
 ### 2026-09-24 09:45 · Phase 10: landing page, browser demo, workflows (cloud session)
 
 - Owner: GitHub Pages for the site; no paid Apple Developer Program (so Mac builds ship unsigned, ad-hoc signed).

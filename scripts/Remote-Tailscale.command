@@ -11,6 +11,7 @@ if [[ -z "$TS" ]]; then
   read -k 1 "?Press any key to close."; exit 1
 fi
 echo "Turning on Tailscale Serve for port 7788…"
+echo "(If it prints a login.tailscale.com link and waits: open it, click Enable HTTPS, and this finishes by itself.)"
 "$TS" serve --bg 7788
 echo
 "$TS" serve status
