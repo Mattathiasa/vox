@@ -1,0 +1,14 @@
+{
+  "name": "vox-bridge",
+  "displayName": "Vox Bridge",
+  "description": "Lets the Vox voice assistant open split terminals and send commands to them.",
+  "version": "0.1.0",
+  "publisher": "mattathiasa",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "https://github.com/Mattathiasa/vox" },
+  "engines": { "vscode": "^1.80.0" },
+  "categories": ["Other"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./extension.js",
+  "contributes": {}
+}

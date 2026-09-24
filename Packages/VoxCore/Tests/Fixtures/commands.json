@@ -1,0 +1,296 @@
+{
+  "description": "Real voice-to-text transcripts and the String(describing:) output of the Intent/RouterAction Vox should parse from each. Speech-to-text artifacts included: trailing periods, random capitalization, misspellings that still parse. Add new misheard phrasings here after real use; VoiceCommandsTests catches regressions. Tests use VoxConfig.test (tools: freebuff, claude; projects: chirp, cbs).",
+
+  "cases": [
+    {
+      "voice": "run freebuff in chirp and add tests for the daemon",
+      "mode": "idle",
+      "expect": "launch(tool: \"freebuff\", project: Optional(\"chirp\"), prompt: Optional(\"add tests for the daemon\"))"
+    },
+    {
+      "voice": "Run free buff.",
+      "mode": "idle",
+      "expect": "launch(tool: \"freebuff\", project: nil, prompt: nil)"
+    },
+    {
+      "voice": "run freebuff in chirp and explain what this project does",
+      "mode": "idle",
+      "expect": "launch(tool: \"freebuff\", project: Optional(\"chirp\"), prompt: Optional(\"explain what this project does\"))"
+    },
+    {
+      "voice": "open claude code",
+      "mode": "idle",
+      "expect": "launch(tool: \"claude\", project: nil, prompt: nil)"
+    },
+    {
+      "voice": "start freebuff",
+      "mode": "idle",
+      "expect": "launch(tool: \"freebuff\", project: nil, prompt: nil)"
+    },
+    {
+      "voice": "Run Claude.",
+      "mode": "idle",
+      "expect": "launch(tool: \"claude\", project: nil, prompt: nil)"
+    },
+    {
+      "voice": "hey vox run freebuff in chirp",
+      "mode": "idle",
+      "expect": "launch(tool: \"freebuff\", project: Optional(\"chirp\"), prompt: nil)"
+    },
+    {
+      "voice": "computer fire up claude in cbs and add a retry to the websocket client",
+      "mode": "idle",
+      "expect": "launch(tool: \"claude\", project: Optional(\"cbs\"), prompt: Optional(\"add a retry to the websocket client\"))"
+    },
+    {
+      "voice": "exit",
+      "mode": "idle",
+      "expect": "exit"
+    },
+    {
+      "voice": "Done.",
+      "mode": "idle",
+      "expect": "exit"
+    },
+    {
+      "voice": "that's all",
+      "mode": "idle",
+      "expect": "exit"
+    },
+    {
+      "voice": "exit early if the list is empty",
+      "mode": "idle",
+      "expect": "unknown"
+    },
+    {
+      "voice": "what is running",
+      "mode": "idle",
+      "expect": "listSessions"
+    },
+    {
+      "voice": "show sessions",
+      "mode": "idle",
+      "expect": "listSessions"
+    },
+    {
+      "voice": "help",
+      "mode": "idle",
+      "expect": "help"
+    },
+    {
+      "voice": "what can you do",
+      "mode": "idle",
+      "expect": "help"
+    },
+    {
+      "voice": "never mind",
+      "mode": "idle",
+      "expect": "cancel"
+    },
+    {
+      "voice": "forget it",
+      "mode": "idle",
+      "expect": "cancel"
+    },
+    {
+      "voice": "switch to claude",
+      "mode": "idle",
+      "expect": "focus(tool: \"claude\")"
+    },
+    {
+      "voice": "go to freebuff",
+      "mode": "idle",
+      "expect": "focus(tool: \"freebuff\")"
+    },
+    {
+      "voice": "claude",
+      "mode": "idle",
+      "expect": "focus(tool: \"claude\")"
+    },
+    {
+      "voice": "kill the freebuff",
+      "mode": "idle",
+      "expect": "kill(tool: \"freebuff\")"
+    },
+    {
+      "voice": "shut down claude",
+      "mode": "idle",
+      "expect": "kill(tool: \"claude\")"
+    },
+    {
+      "voice": "interrupt freebuff",
+      "mode": "idle",
+      "expect": "interrupt(tool: Optional(\"freebuff\"))"
+    },
+    {
+      "voice": "interrupt",
+      "mode": "idle",
+      "expect": "interrupt(tool: nil)"
+    },
+    {
+      "voice": "restart freebuff",
+      "mode": "idle",
+      "expect": "restart(tool: \"freebuff\")"
+    },
+    {
+      "voice": "show freebuff",
+      "mode": "idle",
+      "expect": "showTool(\"freebuff\")"
+    },
+    {
+      "voice": "tell claude to fix the login bug",
+      "mode": "idle",
+      "expect": "tell(tool: \"claude\", text: \"fix the login bug\")"
+    },
+    {
+      "voice": "ask freebuff what this file does",
+      "mode": "idle",
+      "expect": "tell(tool: \"freebuff\", text: \"what this file does\")"
+    },
+    {
+      "voice": "kill htop",
+      "mode": "idle",
+      "expect": "desktop([VoxCore.DesktopCommand.quitApp(\"htop\")], unparsed: nil)"
+    },
+    {
+      "voice": "run freebuff in lehulu",
+      "mode": "idle",
+      "expect": "unknownProject(spoken: \"lehulu\")"
+    },
+    {
+      "voice": "the weather is nice today",
+      "mode": "idle",
+      "expect": "unknown"
+    },
+    {
+      "voice": "add a retry to the websocket client",
+      "mode": "locked(freebuff)",
+      "expect": "[VoxCore.RouterAction.send(tool: \"freebuff\", text: \"add a retry to the websocket client\")]"
+    },
+    {
+      "voice": "switch to the new API client",
+      "mode": "locked(freebuff)",
+      "expect": "[VoxCore.RouterAction.send(tool: \"freebuff\", text: \"switch to the new API client\")]"
+    },
+    {
+      "voice": "vox switch to claude",
+      "mode": "locked(freebuff)",
+      "expect": "[VoxCore.RouterAction.focus(tool: \"claude\")]"
+    },
+    {
+      "voice": "exit",
+      "mode": "locked(freebuff)",
+      "expect": "[VoxCore.RouterAction.feedback(\"Stopped talking to freebuff. freebuff is still running.\")]"
+    },
+    {
+      "voice": "interrupt",
+      "mode": "locked(freebuff)",
+      "expect": "[VoxCore.RouterAction.interrupt(tool: \"freebuff\")]"
+    },
+    {
+      "voice": "vox tell claude to fix the login bug",
+      "mode": "locked(freebuff)",
+      "expect": "[VoxCore.RouterAction.send(tool: \"claude\", text: \"fix the login bug\")]"
+    },
+    {
+      "voice": "open safari",
+      "mode": "idle",
+      "expect": "desktop([VoxCore.DesktopCommand.openApp(\"safari\")], unparsed: nil)"
+    },
+    {
+      "voice": "open the claude app",
+      "mode": "idle",
+      "expect": "desktop([VoxCore.DesktopCommand.openApp(\"claude\")], unparsed: nil)"
+    },
+    {
+      "voice": "search for swift concurrency",
+      "mode": "idle",
+      "expect": "desktop([VoxCore.DesktopCommand.webSearch(\"swift concurrency\")], unparsed: nil)"
+    },
+    {
+      "voice": "go to github dot com",
+      "mode": "idle",
+      "expect": "desktop([VoxCore.DesktopCommand.openURL(\"github dot com\")], unparsed: nil)"
+    },
+    {
+      "voice": "type hello and press enter",
+      "mode": "idle",
+      "expect": "desktop([VoxCore.DesktopCommand.typeText(\"hello\"), VoxCore.DesktopCommand.pressKey(return)], unparsed: nil)"
+    },
+    {
+      "voice": "copy",
+      "mode": "idle",
+      "expect": "desktop([VoxCore.DesktopCommand.pressKey(command+c)], unparsed: nil)"
+    },
+    {
+      "voice": "volume up",
+      "mode": "idle",
+      "expect": "desktop([VoxCore.DesktopCommand.volume(VoxCore.VolumeChange.up)], unparsed: nil)"
+    },
+    {
+      "voice": "set volume to 40",
+      "mode": "idle",
+      "expect": "desktop([VoxCore.DesktopCommand.volume(VoxCore.VolumeChange.set(40))], unparsed: nil)"
+    },
+    {
+      "voice": "what time is it",
+      "mode": "idle",
+      "expect": "desktop([VoxCore.DesktopCommand.answer(VoxCore.Question.time)], unparsed: nil)"
+    },
+    {
+      "voice": "what is 12 times 8",
+      "mode": "idle",
+      "expect": "desktop([VoxCore.DesktopCommand.answer(VoxCore.Question.calculation(\"12 times 8\"))], unparsed: nil)"
+    },
+    {
+      "voice": "set a timer for 5 minutes",
+      "mode": "idle",
+      "expect": "desktop([VoxCore.DesktopCommand.timer(seconds: 300)], unparsed: nil)"
+    },
+    {
+      "voice": "create a note called groceries",
+      "mode": "idle",
+      "expect": "desktop([VoxCore.DesktopCommand.createNote(\"groceries\")], unparsed: nil)"
+    },
+    {
+      "voice": "open downloads",
+      "mode": "idle",
+      "expect": "desktop([VoxCore.DesktopCommand.openFolder(\"downloads\")], unparsed: nil)"
+    },
+    {
+      "voice": "open chirp in kiro",
+      "mode": "idle",
+      "expect": "desktop([VoxCore.DesktopCommand.openProject(project: \"chirp\", app: \"kiro\")], unparsed: nil)"
+    },
+    {
+      "voice": "search youtube for lofi beats",
+      "mode": "idle",
+      "expect": "desktop([VoxCore.DesktopCommand.siteSearch(VoxCore.SearchSite.youtube, \"lofi beats\")], unparsed: nil)"
+    },
+    {
+      "voice": "dark mode",
+      "mode": "idle",
+      "expect": "desktop([VoxCore.DesktopCommand.system(VoxCore.SystemAction.darkMode(nil))], unparsed: nil)"
+    },
+    {
+      "voice": "turn on dark mode",
+      "mode": "idle",
+      "expect": "desktop([VoxCore.DesktopCommand.system(VoxCore.SystemAction.darkMode(Optional(true)))], unparsed: nil)"
+    },
+    {
+      "voice": "open antigravity with 3 terminals",
+      "mode": "idle",
+      "expect": "desktop([VoxCore.DesktopCommand.openApp(\"antigravity\"), VoxCore.DesktopCommand.ide(VoxCore.IDECommand.openTerminals(count: 3, commands: []))], unparsed: nil)"
+    },
+    {
+      "voice": "play",
+      "mode": "idle",
+      "expect": "desktop([VoxCore.DesktopCommand.media(VoxCore.MediaKey.playPause)], unparsed: nil)"
+    },
+    {
+      "voice": "next song",
+      "mode": "idle",
+      "expect": "desktop([VoxCore.DesktopCommand.media(VoxCore.MediaKey.next)], unparsed: nil)"
+    }
+  ]
+}

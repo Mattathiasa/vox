@@ -1,0 +1,61 @@
+# XcodeGen spec. Vox.xcodeproj is GENERATED from this file and is gitignored.
+# Edit this file, then run: xcodegen generate
+name: Vox
+options:
+  bundleIdPrefix: com.mattathiasa
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+
+packages:
+  VoxCore:
+    path: Packages/VoxCore
+  KeyboardShortcuts:
+    url: https://github.com/sindresorhus/KeyboardShortcuts
+    from: 2.0.0
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+
+targets:
+  Vox:
+    type: application
+    platform: macOS
+    sources:
+      - path: Vox
+    dependencies:
+      - package: VoxCore
+      - package: KeyboardShortcuts
+    info:
+      path: Vox/Info.plist
+      properties:
+        CFBundleDisplayName: Vox
+        CFBundleShortVersionString: "0.1.0"
+        CFBundleVersion: "1"
+        LSUIElement: true              # menu-bar app: no Dock icon
+        LSMinimumSystemVersion: "14.0"
+        NSMicrophoneUsageDescription: Vox listens while you hold the push-to-talk key.
+        NSSpeechRecognitionUsageDescription: Vox turns your speech into commands on this Mac.
+        NSAppleEventsUsageDescription: Vox controls apps like Terminal and Safari when you ask it to.
+    entitlements:
+      path: Vox/Vox.entitlements
+      properties:
+        # No sandbox: Vox must run tmux and send Apple Events to other apps.
+        com.apple.security.app-sandbox: false
+        # Needed with the hardened runtime for AppleScript and the microphone.
+        com.apple.security.automation.apple-events: true
+        com.apple.security.device.audio-input: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mattathiasa.vox
+        PRODUCT_NAME: Vox
+        ENABLE_HARDENED_RUNTIME: YES
+        CODE_SIGN_STYLE: Automatic
+        # Sign with your Apple Development team, NEVER ad-hoc ("-"): macOS ties
+        # Accessibility/Automation permissions to the signature, and ad-hoc
+        # builds lose them on every rebuild. Set your Team ID here or in
+        # Xcode > Signing & Capabilities.
+        DEVELOPMENT_TEAM: 9WL594DRDD
+        CODE_SIGN_IDENTITY: "Apple Development"

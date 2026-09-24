@@ -1,0 +1,20 @@
+# Xcode / build artifacts
+Vox.xcodeproj/
+Vox.xcworkspace/
+.build/
+packages/.build/
+*.xcuserdatad/
+*.xcodeproj/
+
+# Logs
+*.log
+.logs/
+
+# macOS
+.DS_Store
+.AppleDouble
+
+# Editor / temp
+*.swp
+*.swo
+*~
