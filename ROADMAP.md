@@ -21,15 +21,25 @@ Never mark `[x]` for something you could not run. Use `[w]` and say why in the L
 
 ## Current state (update this block every session)
 
-- **FEATURE FREEZE (owner's decision, 2026-09-23 14:17):** finish phases in order; no new features until the
-  current phase's Verification boxes are `[x]`. (Owner-requested UX fixes to already-built parts are allowed and logged.)
-- **Current phase: 1 → closing.** All technical checks pass on the Mac (Verify.command 20:03: 153/153 tests, app build OK). Only the
-  "output view on screen" box is left, and it needs the owner's eyes. Next: Phase 2 (owner's own phrasings),
-  then Phase 3 (voice) — both need the owner speaking; agents can prepare test sets (Phase 3 voice test set) and
-  research IDE chat command IDs (Phase 4).
-- **How agents verify on this Mac:** open `scripts/Verify.command` (unit tests + app build → `.logs/verify.log`)
-  and `scripts/Verify-Tools.command` (real tmux + real tools → `.logs/selftest.log`) from Finder, then read the logs.
-- **Blockers:** agents can't see Vox's own window (menu-bar app, not grantable to computer use).
+- **FEATURE FREEZE lifted for Phases 8–9 by the owner (2026-09-24 09:03):** "make it controllable from a phone
+  web app, and a Windows app for my gaming PC". Earlier phases' hands-on boxes are still open (owner testing).
+- **Current phases: 8 (phone remote) and 9 (Windows).** Web app + Windows agent are built and tested in the
+  cloud (Node: 13 tests incl. real pseudo-terminals over HTTP; Playwright screenshots of the phone UI).
+  The **Swift side is written but NOT compiled yet** (cloud has no Swift): `VoxCore/Remote/*`,
+  `RemoteTests`, `GrammarParityTests`, `AppState` RemoteHost, Settings → Phone, live typing in tiles.
+- **Next (Claude Code on the Mac, in ~/Projects/vox), in order:**
+  1. `cd Packages/VoxCore && swift test` → fix compile errors in the new Remote files; then make
+     `GrammarParityTests` pass. If Swift and `shared/grammar-cases.json` disagree, **Swift is the reference**:
+     fix the JS port (`windows/src/parser.js`/`router.js`), regenerate nothing by hand, re-run `cd windows && npm test`.
+  2. `scripts/test.sh` (app build). New Vox/ files: none (all app code went into existing files), but run
+     `xcodegen generate` anyway if the build can't find `RemoteHost`/`PhoneSettings`.
+  3. Run the app, Settings → Phone → turn on; `curl -s localhost:7788/api/ping`; open
+     `http://127.0.0.1:7788/#pair=<code>` in Safari on the Mac and check the page.
+  4. Owner: Tailscale on Mac + iPhone → `scripts/Remote-Tailscale.command` → scan the QR.
+  5. Windows: `scripts/Package-Windows.command` → copy `dist/Vox-Windows.zip` to the PC → `Install-Vox.cmd`.
+- **How agents verify on this Mac:** `scripts/Verify.command` (unit tests + app build → `.logs/verify.log`),
+  `scripts/Verify-Tools.command` (real tmux + tools → `.logs/selftest.log`), `cd windows && npm test`.
+- **Blockers:** agents can't see Vox's own window; nobody has run the Windows agent on Windows yet.
 
 ### Progress at a glance
 
@@ -42,7 +52,9 @@ Never mark `[x]` for something you could not run. Use `[w]` and say why in the L
 | 3b/3d/3e Desktop commands | done | pass (166 tests) | not started |
 | 4 IDE bridge (terminals) | terminals done; chat pending | extension tested with mock; installed in Antigravity/Kiro/VS Code | reload + try |
 | 7a HUD | done | builds | owner reviewing |
-| 5, 6, 7 | not started | — | — |
+| 5, 6, 7 | see Log (5 parsing, 6 LLM fallback, 7 settings done by another session) | pass (176) | — |
+| 8 Phone remote | web app done; Swift written | web: Playwright vs. Windows agent; Swift: **not compiled** | pair a phone |
+| 9 Windows | agent done | 13 Node tests (grammar parity, router, HTTP, real pty) | install on the PC |
 
 ## Phase overview
 
@@ -58,6 +70,8 @@ Never mark `[x]` for something you could not run. Use `[w]` and say why in the L
 | 5 | Safari + Claude desktop adapters | `[ ]` | 3–4 d |
 | 6 | LLM fallback for commands the rules miss | `[ ]` | 3 d |
 | 7 | Polish: spoken feedback, history, settings UI | `[ ]` | ongoing |
+| 8 | Phone remote: web controller for the Mac (PWA, Tailscale) | `[~]` | 3–4 d |
+| 9 | Vox for Windows (Node agent, native terminals, same phone app) | `[~]` | 5–7 d |
 
 ---
 
@@ -282,9 +296,80 @@ Grammar (idle, or after `vox` while talking to a tool): see docs/ARCHITECTURE.md
 
 ---
 
+## Phase 8: Phone remote (web controller for the Mac)
+
+Owner's decision 2026-09-24 09:03: control Vox from a phone (iPhone and Android) through a web app, at home
+and from anywhere via Tailscale. **Done when:** from the phone you can say "open safari", see every running
+tool's terminal live, type into one, and answer a confirmation, all without touching the Mac.
+
+Design (see ARCHITECTURE "Remote protocol"): the Mac app serves `web/remote/` (one glass-style PWA) plus a small
+JSON API on port 7788. Every command goes through the **same router and safety policy** as voice. Off by default.
+
+- [w] `VoxCore/Remote/`: HTTP request parser, response writer, API routing (`RemoteRoute`), bearer-token check
+      (constant time), failed-token lockout, state JSON (`RemoteState`): pure, unit-tested
+- [w] `VoxCore/Remote/RemoteServer.swift`: Network-framework listener. Default binds `127.0.0.1` (Tailscale Serve
+      proxies to it); "Allow on home Wi-Fi" switch binds all interfaces. Web assets embedded (`RemoteWebAssets.swift`, generated)
+- [w] App: pairing code in the Keychain, Settings → Phone tab (on/off, Wi-Fi switch, URL, QR code, new code), phone commands in the log
+- [x] `web/remote/`: pairing via `#pair=` link/QR, Siri-style status, command box, mic button (Web Speech API on HTTPS),
+      spoken replies, confirm sheet, tool launch chips, live terminals with keys **and direct typing**
+- [w] Direct typing into terminals (owner's request 2026-09-23 19:48, "clickable and editable like a normal terminal"):
+      engine `type(_:inTool:)` (literal keys, no Enter) + more keys (Backspace, Delete, Home, End, PgUp/PgDn); used by the phone and the Mac tiles
+- [w] `scripts/Remote-Tailscale.command`: runs `tailscale serve --bg 7788` and prints the HTTPS URL
+
+**Verification**
+- [ ] Unit tests for parser/routing/auth/lockout pass (Verify.command)
+- [ ] Mac: phone page loads at `http://127.0.0.1:7788`, pairing works, wrong code → 401 then lockout
+- [ ] iPhone over Tailscale HTTPS: mic button works, "open safari" runs on the Mac
+- [ ] Android Chrome over Tailscale: same
+- [ ] A confirmation from the phone ("type rm test" → Yes) and a kill (always asks)
+
+## Phase 9: Vox for Windows (gaming PC)
+
+Owner's decisions 2026-09-24: Node.js agent (testable in the cloud), tools run in **native** Windows terminals
+(ConPTY via node-pty), controlled from the same phone web app. **Done when:** on the PC, "run claude" starts
+Claude Code in `%USERPROFILE%\Projects`, its screen shows on the phone, and "open steam" opens Steam.
+
+Code in `windows/` (plain modern JavaScript, Node 20+, `node --test`). The grammar is a port of VoxCore's; the
+shared phrase list `shared/grammar-cases.json` is checked by **both** the Swift tests and the Node tests so the two can't drift silently.
+
+- [x] Port: tokenizer, phrase matcher, tool/project/exit/interrupt/help/tell grammar, router state machine, safety policy, config
+- [~] Terminals: `TerminalHost` (node-pty/ConPTY) with the same surface as TmuxAdapter (start, type, submit, key, capture, resize, kill); screen buffer via a small VT parser
+- [w] Desktop (PowerShell, text passed via environment, never in the command string): open app/site/folder, search, close app, type text, keys, volume, media, lock, time/date/battery/math answers
+- [x] Server: same Remote protocol as the Mac, same `web/remote/` app; token in `%APPDATA%\Vox\remote-token`
+- [w] Windows UI: the web app opened as an Edge app window on `http://localhost:7788` (mic works on localhost), tray-less first version
+- [w] Install: `windows/Install-Vox.cmd` (checks Node, `npm ci`, creates config, shortcut), `Start-Vox.cmd`
+- [~] Parity: `shared/grammar-cases.json` + `GrammarParityTests.swift` + `windows/test/parity.test.js`
+- [ ] Later: IDE bridge on Windows (Antigravity/Kiro), on-device wake word (Vosk), tray icon
+
+**Verification**
+- [x] `node --test` passes in the cloud (grammar, router, safety, protocol, pty with a fake)
+- [ ] Owner's PC: install script runs, "run claude" works, phone controls it over Tailscale
+- [ ] Parity tests pass on both sides
+
 ## Log
 
 Newest first. One entry per work session: date, who, what changed, **how it was verified**.
+
+### 2026-09-24 09:40 · Phases 8 + 9: phone remote and Vox for Windows (cloud session)
+
+- Owner's decisions (asked via questions): Windows agent in **Node.js**, tools in **native** terminals, phone reach
+  **home Wi-Fi + Tailscale**, phones **iPhone and Android**. Recorded in AGENTS (invariants 6–7) and ARCHITECTURE (D16–D18, "Remote protocol").
+- `web/remote/`: glass PWA (pairing via `#pair=` link/QR, Siri-style orb, mic via Web Speech API, spoken replies,
+  confirm sheet, launch chips, live terminals, full-screen terminal with keycaps and **Line/Live typing**, Recent, activity log, Pair a phone).
+- `windows/`: JS port of tokenizer/parser/MoreCommands/IDECommands/router/safety (`src/*.js`), `TerminalHost`
+  (node-pty + @xterm/headless), `WindowsDesktop` (PowerShell with data only in env vars; Mac shortcuts mapped to Windows keys),
+  Start-menu app catalog, Remote protocol server (pairing code, constant-time compare, lockout, CSP), `Install-Vox.cmd`,
+  `Start-Vox.cmd` (Edge app window), `Remote-Tailscale.cmd`, README. `scripts/Package-Windows.command` zips it for the PC.
+- `shared/grammar-cases.json` (95 cases) + `grammar-config.json`; `GrammarParityTests.swift` and `windows/test/parity.test.js`.
+  The expectations were generated from the JS port and hand-checked against the Swift code; **the Swift run is the real check.**
+- Mac: `VoxCore/Remote/` (RemoteHTTP: parser/routes/pairing/lockout/state; RemoteServer: Network.framework, loopback unless
+  "home Wi-Fi"; RemoteWebAssets: generated by `scripts/embed-web.mjs`), `VoxEngine.type(_:inTool:)`, more allowed keys
+  (BSpace, DC, Home, End, PPage, NPage), `AppState.perform` (async, returns events), `RemoteHost` (in AppState.swift),
+  Settings → Phone (QR via CoreImage, Tailscale detection), live typing in HUD tiles (click the screen, type), `scripts/Remote-Tailscale.command`.
+- Verified: `cd windows && npm test` → 13/13 pass (grammar parity, router, HTTP auth/lockout, launch→send→type→key→kill-with-yes
+  over HTTP with real bash pseudo-terminals, desktop dispatch, embedded web copy up to date). Playwright (Chromium, 390×844 dark/light
+  and 1280×820) against `node src/main.js --demo`: pairing, terminals, full-screen terminal, confirm sheet, Pair a phone — no console errors.
+  Swift files pass a tree-sitter syntax check only; **not compiled** (no Swift toolchain in the cloud).
 
 ### 2026-09-24 01:46 · Phase 7: Settings UI for tools/projects (remaining task)
 

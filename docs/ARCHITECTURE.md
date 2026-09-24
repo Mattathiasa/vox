@@ -135,6 +135,47 @@ All chat and terminal text is treated like typed text: `confirmPatterns` require
 and the prompt is sent as structured data (not a shell command string) per
 security invariant D9/D15.
 
+## Remote protocol (Phase 8 phone remote, Phase 9 Windows)
+
+One web app (`web/remote/`, plain HTML/CSS/JS, no build) talks to any Vox agent over HTTP. The Mac app
+serves it from `VoxCore/Remote` (assets embedded by `scripts/embed-web.mjs`); the Windows agent serves it
+from `windows/src/server.js`. Default port **7788**. The page polls; there are no push events.
+
+| Method + path | Auth | Body | Returns |
+|---|---|---|---|
+| `GET /`, `/app.js`, `/style.css`, `/manifest.webmanifest`, `/icon.svg` | no | | web app files |
+| `GET /api/ping` | no | | `{name, platform, version}` |
+| `GET /api/state?lines=60` | yes | | `RemoteState`: `host, platform, version, lockedTool, pendingQuestion, busy, wake{enabled,name}, tools[], screens[{tool,text,exited}], history[{command,kind,reply,spoken,source}], log[{kind,text,time}]` |
+| `POST /api/command` | yes | `{text, spoken?, source?}` | `{events:[{kind,message}]}` (same router + safety as voice) |
+| `POST /api/confirm` | yes | `{yes}` | answers the pending question only ("Nothing to confirm." otherwise) |
+| `POST /api/exit` | yes | | leave pass-through |
+| `POST /api/tools/<tool>/launch\|kill\|focus` | yes | | as "vox run/kill/switch to <tool>" (kill asks) |
+| `POST /api/tools/<tool>/send` | yes | `{text}` | text + Enter (confirm patterns apply) |
+| `POST /api/tools/<tool>/type` | yes | `{text}` | literal keystrokes, no Enter (live typing) |
+| `POST /api/tools/<tool>/key` | yes | `{key}` | one of `TmuxAdapter.allowedKeys` / `KEY_SEQUENCES` |
+| `GET /api/pairing` | yes | | Windows only: `{urls, qrSvg, hint}` |
+
+Auth: `Authorization: Bearer <pairing code>`. The code is 20 characters (~100 bits), stored in the Keychain
+(Mac) or `%APPDATA%\Vox\remote-token` (Windows), compared in constant time; 10 failures from one address in
+5 minutes → 429 for 60 s. Pairing links carry the code in the URL **fragment** (`#pair=`), which browsers
+never send to a server; the page stores it in localStorage. Responses carry a strict CSP, `nosniff`,
+`no-referrer`, `frame-ancestors 'none'`; no CORS headers, so other sites can't call the API.
+
+Reachability: the listener binds loopback unless the owner turns on "home Wi-Fi". For the phone, Tailscale
+Serve proxies `https://<device>.<tailnet>.ts.net` → `127.0.0.1:7788`, which gives HTTPS (needed for the
+browser's microphone on iPhone) and restricts access to the owner's tailnet.
+
+Voice on the phone uses the browser's Web Speech API (Safari: Apple servers or on-device; Chrome: Google).
+Spoken replies use `speechSynthesis` on the phone; the Mac stays quiet for phone commands.
+
+## Two grammars, one test list
+
+The Windows agent is Node.js (owner's decision 2026-09-24: testable in the cloud, node-pty for ConPTY), so
+the grammar exists twice: Swift (`VoxCore/Parsing`, `Routing`) and JavaScript (`windows/src/parser.js`,
+`router.js`, a line-by-line port). `shared/grammar-cases.json` lists utterances (with state across steps)
+and the exact router output in a one-line canonical form (`GrammarCanonical.swift` = `canonical.js`).
+`GrammarParityTests.swift` and `windows/test/parity.test.js` both run it. Grammar changes: edit both, add a case.
+
 ## Decisions
 
 | # | Decision | Why | Revisit if |
@@ -153,6 +194,9 @@ security invariant D9/D15.
 | D13 | Wake word via the same SFSpeechRecognizer transcript, matched against configurable spellings | No extra dependency or account; "Balcha" isn't English so mishearings are expected and listed in config | False triggers or misses stay high → Porcupine/custom keyword model |
 | D14 | IDE control through a localhost extension, not simulated keystrokes | Keystrokes go wherever focus is; the extension targets terminal N exactly and can split panes | — |
 | D15 | Extension in plain JS, HTTP (not WebSocket), token in a 0600 file per window | No build step or npm deps to maintain; request/response is all Vox needs | Need push events from the IDE → WebSocket |
+| D16 | Phone remote = web app + polling JSON API, not a native iOS/Android app | One codebase for iPhone, Android and the Windows window; no App Store; Add to Home Screen gives an icon | Need background push or wake word on the phone → native app |
+| D17 | Tailscale Serve for remote access, loopback bind by default | Real HTTPS (mic on iPhone) and no open port on the Wi-Fi; nothing to host | Owner can't use Tailscale → self-signed cert + trust profile |
+| D18 | Windows agent in Node.js with a ported grammar, guarded by shared test cases | Testable in the cloud; mature ConPTY (node-pty) and VT emulation (@xterm/headless); Swift on Windows lacks both | Drift keeps happening → compile VoxCore's parser to WASM and share it |
 | D9 | No sandbox, not on the Mac App Store | Needs tmux, Apple Events to arbitrary apps, and Accessibility | — |
 
 ## Adding an adapter (Phase 4+ pattern)

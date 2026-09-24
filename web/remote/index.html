@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+  <meta name="theme-color" content="#0b0b12">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Vox">
+  <title>Vox Remote</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="wash" aria-hidden="true"><i></i><i></i><i></i></div>
+
+  <!-- Pairing -->
+  <section id="pair" class="screen" hidden>
+    <div class="pair-card glass">
+      <div class="orb small" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+      <h1>Pair with Vox</h1>
+      <p class="muted">On your computer open <b>Vox → Settings → Phone</b> and scan the QR code, or type the pairing code below.</p>
+      <form id="pair-form" autocomplete="off">
+        <input id="pair-code" class="field" inputmode="text" autocapitalize="off" spellcheck="false" placeholder="Pairing code" aria-label="Pairing code">
+        <button class="btn prominent" type="submit">Pair</button>
+      </form>
+      <p id="pair-error" class="error" role="alert"></p>
+    </div>
+  </section>
+
+  <!-- Main -->
+  <main id="app" class="screen" hidden>
+    <header class="topbar">
+      <div class="host">
+        <span id="conn-dot" class="dot"></span>
+        <div>
+          <div id="host-name" class="host-name">Vox</div>
+          <div id="host-sub" class="muted tiny">Connecting…</div>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button id="btn-speak" class="icon-btn glass" title="Spoken replies" aria-label="Spoken replies" aria-pressed="true">
+          <svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg>
+        </button>
+        <button id="btn-menu" class="icon-btn glass" title="More" aria-label="More">
+          <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div id="orb" class="orb" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+      <div id="phase" class="pill glass">Ready</div>
+      <p id="transcript" class="transcript muted">Tap the mic and talk, or type below.</p>
+      <div id="reply" class="banner glass" hidden></div>
+    </section>
+
+    <section id="confirm" class="sheet glass" hidden role="alertdialog" aria-labelledby="confirm-text">
+      <div class="sheet-icon">?</div>
+      <p id="confirm-text"></p>
+      <div class="row">
+        <button id="confirm-no" class="btn">Cancel</button>
+        <button id="confirm-yes" class="btn prominent warn">Yes, do it</button>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="block-head">
+        <h2>Terminals</h2>
+        <button id="btn-exit" class="chip" hidden>Stop talking to <b id="locked-name"></b></button>
+      </div>
+      <div id="launch" class="chips"></div>
+      <div id="terminals" class="terminals"></div>
+      <p id="no-terminals" class="muted small">No tools running. Tap one above or say “run claude”.</p>
+    </section>
+
+    <section class="block">
+      <h2>Recent</h2>
+      <ul id="history" class="history"></ul>
+    </section>
+
+    <div class="dock-spacer"></div>
+
+    <form id="dock" class="dock glass" autocomplete="off">
+      <button id="btn-mic" class="mic" type="button" aria-label="Talk">
+        <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg>
+      </button>
+      <input id="cmd" class="dock-input" enterkeyhint="send" autocapitalize="off" spellcheck="false" placeholder="Ask Vox…" aria-label="Command">
+      <button class="send" type="submit" aria-label="Send">
+        <svg viewBox="0 0 24 24"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5"/></svg>
+      </button>
+    </form>
+  </main>
+
+  <!-- Full-screen terminal -->
+  <section id="term" class="term-screen" hidden>
+    <header class="term-bar glass">
+      <button id="term-back" class="icon-btn" aria-label="Back">
+        <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
+      <div class="term-title"><span id="term-dot" class="dot"></span><b id="term-name"></b><span id="term-state" class="muted tiny"></span></div>
+      <div class="seg" role="group" aria-label="Typing mode">
+        <button id="mode-line" class="on" type="button">Line</button>
+        <button id="mode-live" type="button">Live</button>
+      </div>
+    </header>
+    <pre id="term-text" class="term-text" tabindex="0"></pre>
+    <div class="term-keys">
+      <button data-key="Escape">esc</button><button data-key="Tab">⇥</button>
+      <button data-key="Up">↑</button><button data-key="Down">↓</button>
+      <button data-key="Left">←</button><button data-key="Right">→</button>
+      <button data-key="C-c">⌃C</button><button data-key="BSpace">⌫</button><button data-key="Enter">⏎</button>
+    </div>
+    <form id="term-form" class="term-input glass" autocomplete="off">
+      <span class="prompt">›</span>
+      <input id="term-cmd" enterkeyhint="send" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Command…" aria-label="Terminal input">
+      <button id="term-kill" type="button" class="chip danger">Kill</button>
+    </form>
+  </section>
+
+  <!-- Menu -->
+  <section id="menu" class="sheet menu glass" hidden>
+    <button id="menu-pair" class="menu-item">Pair a phone</button>
+    <button id="menu-log" class="menu-item">Activity log</button>
+    <button id="menu-help" class="menu-item">What can I say?</button>
+    <button id="menu-unpair" class="menu-item danger">Unpair this phone</button>
+    <button id="menu-close" class="menu-item muted">Close</button>
+  </section>
+
+  <section id="log" class="log-screen" hidden>
+    <header class="term-bar glass">
+      <button id="log-back" class="icon-btn" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <b>Activity</b><span></span>
+    </header>
+    <ul id="log-list" class="log-list"></ul>
+  </section>
+
+  <section id="pairing" class="log-screen" hidden>
+    <header class="term-bar glass">
+      <button id="pairing-back" class="icon-btn" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <b>Pair a phone</b><span></span>
+    </header>
+    <div class="pair-body">
+      <img id="pairing-qr" class="qr" alt="Pairing QR code">
+      <p class="muted small">Scan with your phone's camera, then Share → Add to Home Screen.</p>
+      <ul id="pairing-urls" class="log-list"></ul>
+      <p id="pairing-hint" class="muted small"></p>
+    </div>
+  </section>
+
+  <div id="toast" class="toast glass" hidden></div>
+  <script src="app.js" type="module"></script>
+</body>
+</html>

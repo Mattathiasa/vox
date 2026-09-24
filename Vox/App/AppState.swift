@@ -18,6 +18,8 @@ struct HistoryItem: Identifiable, Equatable {
     let kind: EngineEvent.Kind
     let reply: String
     let spoken: Bool
+    /// Came from the phone remote (Phase 8).
+    var fromPhone = false
 }
 
 /// UI-facing state. Owns the engine; views only talk to this.
@@ -78,6 +80,8 @@ final class AppState: ObservableObject {
     private var engine: VoxEngine?
     private var outputTimer: Timer?
     private let configURL = ConfigStore.defaultURL
+    /// Phone remote (Phase 8). Off until turned on in Settings → Phone.
+    let remote = RemoteHost()
 
     init() {
         wakeEnabled = UserDefaults.standard.object(forKey: Self.wakeDefaultsKey) as? Bool ?? true
@@ -97,9 +101,12 @@ final class AppState: ObservableObject {
         voiceOut.onStart = { [weak self] in self?.wake.setMuted(true) }
         voiceOut.onFinish = { [weak self] in self?.wake.setMuted(false) }
         reloadConfig()
+        remote.attach(self)
     }
 
     var lockedTool: String? { mode.lockedTool }
+    /// For the phone remote (RemoteHost).
+    var currentEngine: VoxEngine? { engine }
 
     // MARK: Input
 
@@ -112,16 +119,29 @@ final class AppState: ObservableObject {
             append(.error, setupProblem ?? "Vox isn't set up.")
             return
         }
-        append(.info, "› \(trimmed)")
-        isBusy = true
-        Task {
-            let events = await engine.handle(trimmed)
-            for event in events { append(event.kind, event.message) }
-            if spoken { speak(events) }
-            recordHistory(trimmed, events: events, spoken: spoken)
-            await syncFromEngine()
-            isBusy = false
+        Task { _ = await perform(trimmed, spoken: spoken) }
+    }
+
+    /// Runs one command and returns what happened (the phone remote needs the events).
+    /// `fromPhone`: the phone speaks its own replies, so the Mac stays quiet.
+    @discardableResult
+    func perform(_ text: String, spoken: Bool = false, fromPhone: Bool = false) async -> [EngineEvent] {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return [] }
+        guard let engine else {
+            let message = setupProblem ?? "Vox isn't set up."
+            append(.error, message)
+            return [EngineEvent(.error, message)]
         }
+        append(.info, (fromPhone ? "📱 " : "") + "› \(trimmed)")
+        isBusy = true
+        let events = await engine.handle(trimmed)
+        for event in events { append(event.kind, event.message) }
+        if spoken && !fromPhone { speak(events) }
+        recordHistory(trimmed, events: events, spoken: spoken, fromPhone: fromPhone)
+        await syncFromEngine()
+        isBusy = false
+        return events
     }
 
     // MARK: Voice
@@ -313,11 +333,11 @@ final class AppState: ObservableObject {
         }
     }
 
-    private func recordHistory(_ command: String, events: [EngineEvent], spoken: Bool) {
+    private func recordHistory(_ command: String, events: [EngineEvent], spoken: Bool, fromPhone: Bool = false) {
         let order: [EngineEvent.Kind] = [.error, .confirm, .warning, .info, .success]
         let worst = order.first { kind in events.contains { $0.kind == kind } } ?? .info
         let reply = events.first { $0.kind == worst }?.message ?? ""
-        let item = HistoryItem(command: command, kind: worst, reply: reply, spoken: spoken)
+        let item = HistoryItem(command: command, kind: worst, reply: reply, spoken: spoken, fromPhone: fromPhone)
         history.insert(item, at: 0)
         if history.count > 8 { history.removeLast(history.count - 8) }
         lastResult = item
@@ -366,6 +386,28 @@ final class AppState: ObservableObject {
             for event in events { append(event.kind, event.message) }
             await syncFromEngine()
             try? await Task.sleep(nanoseconds: 400_000_000)
+            refreshOutput()
+        }
+    }
+
+    /// Same as `sendToTool`, awaited (phone remote).
+    func sendToToolNow(_ tool: String, _ text: String) async -> [EngineEvent] {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, let engine else { return [] }
+        append(.info, "› \(tool): \(trimmed)")
+        let events = await engine.send(trimmed, toTool: tool)
+        for event in events { append(event.kind, event.message) }
+        await syncFromEngine()
+        return events
+    }
+
+    /// Live typing: keystrokes straight into a tool's terminal (no Enter).
+    func typeInTool(_ tool: String, _ text: String) {
+        guard let engine else { return }
+        Task {
+            let events = await engine.type(text, inTool: tool)
+            for event in events { append(event.kind, event.message) }
+            try? await Task.sleep(nanoseconds: 120_000_000)
             refreshOutput()
         }
     }
@@ -512,5 +554,197 @@ final class AppState: ObservableObject {
     private func append(_ kind: EngineEvent.Kind, _ text: String) {
         log.append(LogLine(kind: kind, text: text))
         if log.count > 300 { log.removeFirst(log.count - 300) }
+    }
+}
+
+
+// MARK: - Phone remote (Phase 8)
+
+/// Owns the phone remote's server and pairing code. Lives here (not a new file) so ⌘R works
+/// without regenerating the project.
+@MainActor
+final class RemoteHost: ObservableObject {
+    static let enabledKey = "remoteEnabled"
+    static let lanKey = "remoteAllowLAN"
+    static let codeKey = "remote-pairing-code"
+    static let port: UInt16 = 7788
+
+    @Published private(set) var enabled: Bool
+    @Published private(set) var allowLAN: Bool
+    @Published private(set) var status = "Off"
+    @Published private(set) var code: String
+
+    private var server: RemoteServer?
+    private weak var appState: AppState?
+
+    init() {
+        enabled = UserDefaults.standard.bool(forKey: Self.enabledKey)
+        allowLAN = UserDefaults.standard.bool(forKey: Self.lanKey)
+        if let saved = Keychain.read(Self.codeKey), !saved.isEmpty {
+            code = saved
+        } else {
+            code = RemotePairing.newCode()
+            _ = Keychain.set(Self.codeKey, code)
+        }
+    }
+
+    func attach(_ appState: AppState) {
+        self.appState = appState
+        if enabled { start() }
+    }
+
+    func setEnabled(_ on: Bool) {
+        enabled = on
+        UserDefaults.standard.set(on, forKey: Self.enabledKey)
+        on ? start() : stop()
+    }
+
+    func setAllowLAN(_ on: Bool) {
+        allowLAN = on
+        UserDefaults.standard.set(on, forKey: Self.lanKey)
+        if enabled { stop(); start() }
+    }
+
+    /// New code: every paired phone has to pair again.
+    func regenerateCode() {
+        code = RemotePairing.newCode()
+        _ = Keychain.set(Self.codeKey, code)
+        syncCode()
+    }
+
+    private func start() {
+        stop()
+        let codeBox = CodeBox(code)
+        currentCode = codeBox
+        let server = RemoteServer(
+            port: Self.port, allowLAN: allowLAN,
+            code: { codeBox.value },
+            onStatus: { [weak self] message in Task { @MainActor in self?.status = message } },
+            handler: { [weak self] route in
+                guard let self else { return .error(500, "Vox is shutting down.") }
+                return await self.handle(route)
+            })
+        do {
+            try server.start()
+            self.server = server
+            status = "Starting…"
+        } catch {
+            status = "Couldn't start: \(error)"
+        }
+    }
+
+    private func stop() {
+        server?.stop()
+        server = nil
+        status = "Off"
+    }
+
+    /// The server reads the code off the main actor, so it gets a thread-safe copy.
+    private var currentCode: CodeBox?
+    final class CodeBox: @unchecked Sendable {
+        private let lock = NSLock()
+        private var stored: String
+        init(_ value: String) { stored = value }
+        var value: String { lock.lock(); defer { lock.unlock() }; return stored }
+        func set(_ value: String) { lock.lock(); stored = value; lock.unlock() }
+    }
+
+    func syncCode() { currentCode?.set(code) }
+
+    // MARK: URLs for pairing
+
+    /// Wi-Fi addresses (only useful when "Allow on home Wi-Fi" is on).
+    var lanURLs: [String] {
+        guard allowLAN else { return [] }
+        return Self.ipv4Addresses().map { "http://\($0):\(Self.port)/#pair=\(code)" }
+    }
+
+    var localURL: String { "http://127.0.0.1:\(Self.port)/#pair=\(code)" }
+
+    static func ipv4Addresses() -> [String] {
+        var result: [String] = []
+        var pointer: UnsafeMutablePointer<ifaddrs>?
+        guard getifaddrs(&pointer) == 0, let first = pointer else { return [] }
+        defer { freeifaddrs(pointer) }
+        for ifa in sequence(first: first, next: { $0.pointee.ifa_next }) {
+            guard let addr = ifa.pointee.ifa_addr, addr.pointee.sa_family == UInt8(AF_INET) else { continue }
+            let name = String(cString: ifa.pointee.ifa_name)
+            guard name.hasPrefix("en") || name.hasPrefix("utun") else { continue }
+            var host = [CChar](repeating: 0, count: Int(NI_MAXHOST))
+            if getnameinfo(addr, socklen_t(addr.pointee.sa_len), &host, socklen_t(host.count), nil, 0, NI_NUMERICHOST) == 0 {
+                let ip = String(cString: host)
+                if !ip.hasPrefix("127.") { result.append(ip) }
+            }
+        }
+        return result
+    }
+
+    // MARK: API
+
+    private func handle(_ route: RemoteRoute) async -> HTTPResponse {
+        guard let appState else { return .error(500, "Vox isn't ready.") }
+        func events(_ list: [EngineEvent]) -> HTTPResponse { .json(200, ["events": list.map(\.remoteJSON)]) }
+        switch route {
+        case .asset, .ping:
+            return .error(404, "Not found")
+        case let .state(lines):
+            return .encoded(await appState.remoteState(lines: lines))
+        case let .command(text, spoken, _):
+            return events(await appState.perform(text, spoken: spoken, fromPhone: true))
+        case let .confirm(yes):
+            // Only answers a pending question; otherwise "yes" would go to the tool you're talking to.
+            guard appState.pendingQuestion != nil else { return events([EngineEvent(.info, "Nothing to confirm.")]) }
+            return events(await appState.perform(yes ? "yes" : "no", fromPhone: true))
+        case .exitTool:
+            appState.exitPassThrough()
+            return events([])
+        case let .launch(tool):
+            return events(await appState.perform("vox run \(tool)", fromPhone: true))
+        case let .kill(tool):
+            return events(await appState.perform("vox kill \(tool)", fromPhone: true))
+        case let .focus(tool):
+            return events(await appState.perform("vox switch to \(tool)", fromPhone: true))
+        case let .send(tool, text):
+            return events(await appState.sendToToolNow(tool, text))
+        case let .type(tool, text):
+            return events(await appState.typeNow(tool, text))
+        case let .key(tool, key):
+            return events(await appState.pressKeyNow(key, inTool: tool))
+        }
+    }
+}
+
+extension AppState {
+    /// Looked up once: Host.current() can be slow and the phone polls every second.
+    static let macName: String = Host.current().localizedName ?? "Mac"
+
+    func typeNow(_ tool: String, _ text: String) async -> [EngineEvent] {
+        guard let engine = currentEngine else { return [] }
+        return await engine.type(text, inTool: tool)
+    }
+
+    func pressKeyNow(_ key: String, inTool tool: String) async -> [EngineEvent] {
+        guard let engine = currentEngine else { return [] }
+        return await engine.press(key, inTool: tool)
+    }
+
+    /// What the phone sees (GET /api/state). Screens are read fresh even while the panel is hidden.
+    func remoteState(lines: Int) async -> RemoteState {
+        let screens = await currentEngine?.screens(lines: lines) ?? []
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm:ss"
+        return RemoteState(
+            host: Self.macName,
+            lockedTool: lockedTool,
+            pendingQuestion: pendingQuestion,
+            busy: isBusy,
+            wake: .init(enabled: wakeEnabled, name: wakeName),
+            tools: toolNames,
+            screens: screens.map { RemoteState.Screen(tool: $0.tool, text: $0.text, exited: $0.exited) },
+            history: history.map {
+                RemoteState.Item(command: $0.command, kind: $0.kind.rawValue, reply: $0.reply,
+                                 spoken: $0.spoken, source: $0.fromPhone ? "phone" : "local")
+            },
+            log: log.suffix(60).map { RemoteState.Line(kind: $0.kind.rawValue, text: $0.text, time: formatter.string(from: $0.date)) })
     }
 }

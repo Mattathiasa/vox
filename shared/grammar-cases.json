@@ -1,0 +1,1035 @@
+{
+ "about": "Every step: what the router returns (canonical form). Checked by Packages/VoxCore/Tests/VoxCoreTests/GrammarParityTests.swift and windows/test/parity.test.js. Config: grammar-config.json.",
+ "cases": [
+  {
+   "steps": [
+    {
+     "say": "run claude",
+     "expect": [
+      "launch|claude|~/Projects|"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "run claude",
+     "expect": [
+      "launch|claude|~/Projects|"
+     ]
+    },
+    {
+     "say": "fix the login bug",
+     "expect": [
+      "send|claude|fix the login bug"
+     ]
+    },
+    {
+     "say": "exit",
+     "expect": [
+      "feedback|Stopped talking to claude. claude is still running."
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "run freebuff in chirp and add tests",
+     "expect": [
+      "launch|freebuff|~/Projects/chirp|add tests"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "start free buff in the box project",
+     "expect": [
+      "launch|freebuff|~/Projects/vox|"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "run claude in narnia",
+     "expect": [
+      "feedback|No project called \"narnia\" in your config."
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "launch cloud code",
+     "expect": [
+      "launch|claude|~/Projects|"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "switch to kilo",
+     "expect": [
+      "focus|kilo"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "kilo code",
+     "expect": [
+      "focus|kilo"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "kill freebuff",
+     "expect": [
+      "confirm|Kill the freebuff session? Anything it is doing will stop. Say yes to confirm."
+     ]
+    },
+    {
+     "say": "yes",
+     "expect": [
+      "kill|freebuff"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "kill freebuff",
+     "expect": [
+      "confirm|Kill the freebuff session? Anything it is doing will stop. Say yes to confirm."
+     ]
+    },
+    {
+     "say": "no",
+     "expect": [
+      "feedback|Cancelled."
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "what's running",
+     "expect": [
+      "list"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "never mind",
+     "expect": [
+      "feedback|OK."
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "help",
+     "expect": [
+      "feedback|<help>"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "run claude",
+     "expect": [
+      "launch|claude|~/Projects|"
+     ]
+    },
+    {
+     "say": "vox open safari",
+     "expect": [
+      "desktop:openApp|safari"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "run claude",
+     "expect": [
+      "launch|claude|~/Projects|"
+     ]
+    },
+    {
+     "say": "vox",
+     "expect": [
+      "feedback|Listening for a command."
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "run claude",
+     "expect": [
+      "launch|claude|~/Projects|"
+     ]
+    },
+    {
+     "say": "git push origin main",
+     "expect": [
+      "confirm|Send to claude: \"git push origin main\"? Say yes to confirm."
+     ]
+    },
+    {
+     "say": "yes",
+     "expect": [
+      "send|claude|git push origin main"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "run claude",
+     "expect": [
+      "launch|claude|~/Projects|"
+     ]
+    },
+    {
+     "say": "interrupt",
+     "expect": [
+      "interrupt|claude"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "interrupt",
+     "expect": [
+      "feedback|Not talking to any tool. Say \"interrupt freebuff\"."
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "interrupt kilo",
+     "expect": [
+      "interrupt|kilo"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "restart freebuff",
+     "expect": [
+      "confirm|Restart freebuff? Whatever it's doing will stop. Say yes to confirm."
+     ]
+    },
+    {
+     "say": "yes",
+     "expect": [
+      "kill|freebuff",
+      "launch|freebuff|~/Projects|"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "show claude",
+     "expect": [
+      "show|claude"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "tell kilo to write the readme",
+     "expect": [
+      "send|kilo|write the readme"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "ask claude what this file does",
+     "expect": [
+      "send|claude|what this file does"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "tell claude to delete the old logs",
+     "expect": [
+      "confirm|Send to claude: \"delete the old logs\"? Say yes to confirm."
+     ]
+    },
+    {
+     "say": "yes",
+     "expect": [
+      "send|claude|delete the old logs"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "open safari",
+     "expect": [
+      "desktop:openApp|safari"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "open the claude app",
+     "expect": [
+      "desktop:openApp|claude"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "open safari and create a note called milk",
+     "expect": [
+      "desktop:openApp|safari",
+      "desktop:createNote|milk"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "close notes",
+     "expect": [
+      "desktop:quitApp|notes"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "quit slack",
+     "expect": [
+      "desktop:quitApp|slack"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "switch to finder",
+     "expect": [
+      "desktop:focusApp|finder"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "hide slack",
+     "expect": [
+      "desktop:hideApp|slack"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "open steam and then open discord",
+     "expect": [
+      "desktop:openApp|steam",
+      "feedback|Didn't understand \"open discord\"."
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "create a note called groceries",
+     "expect": [
+      "desktop:createNote|groceries"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "search for swift concurrency",
+     "expect": [
+      "desktop:webSearch|swift concurrency"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "go to github dot com",
+     "expect": [
+      "desktop:openURL|github dot com"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "visit apple.com slash mac",
+     "expect": [
+      "desktop:openURL|apple.com slash mac"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "type hello world",
+     "expect": [
+      "desktop:typeText|hello world"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "type hello and press enter",
+     "expect": [
+      "desktop:typeText|hello",
+      "desktop:pressKey|return"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "type rm -rf build",
+     "expect": [
+      "confirm|Type \"rm -rf build\" into the front app? Say yes to confirm."
+     ]
+    },
+    {
+     "say": "yes",
+     "expect": [
+      "desktop:typeText|rm -rf build"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "press command shift t",
+     "expect": [
+      "desktop:pressKey|shift+command+t"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "press the escape key",
+     "expect": [
+      "desktop:pressKey|escape"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "close tab",
+     "expect": [
+      "desktop:pressKey|command+w"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "copy",
+     "expect": [
+      "desktop:pressKey|command+c"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "scroll down",
+     "expect": [
+      "desktop:pressKey|pagedown"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "lock screen",
+     "expect": [
+      "desktop:pressKey|control+command+q"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "new tab and go to github dot com",
+     "expect": [
+      "desktop:pressKey|command+t",
+      "desktop:openURL|github dot com"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "volume up",
+     "expect": [
+      "desktop:volume|up"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "mute",
+     "expect": [
+      "desktop:volume|mute"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "set volume to 40",
+     "expect": [
+      "desktop:volume|set 40"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "set the volume to 75 percent",
+     "expect": [
+      "desktop:volume|set 75"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "play",
+     "expect": [
+      "desktop:media|playPause"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "next song",
+     "expect": [
+      "desktop:media|next"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "previous track",
+     "expect": [
+      "desktop:media|previous"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "what time is it",
+     "expect": [
+      "desktop:answer|time"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "what's the date",
+     "expect": [
+      "desktop:answer|date"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "battery",
+     "expect": [
+      "desktop:answer|battery"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "read clipboard",
+     "expect": [
+      "desktop:answer|clipboard"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "what apps are open",
+     "expect": [
+      "desktop:answer|openApps"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "what's 12 times 8",
+     "expect": [
+      "desktop:answer|calculation|12 times 8"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "what is 15 percent of 80",
+     "expect": [
+      "desktop:answer|calculation|15 percent of 80"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "calculate the square root of 144",
+     "expect": [
+      "desktop:answer|calculation|the square root of 144"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "2 plus 2",
+     "expect": [
+      "desktop:answer|calculation|2 plus 2"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "set a timer for 5 minutes",
+     "expect": [
+      "desktop:timer|300"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "set a timer for an hour and a half",
+     "expect": [
+      "desktop:timer|5400"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "10 minute timer",
+     "expect": [
+      "desktop:timer|600"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "cancel the timer",
+     "expect": [
+      "desktop:cancelTimers"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "remind me to call mom in 10 minutes",
+     "expect": [
+      "desktop:reminder|call mom|600"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "remind me in half an hour to stretch",
+     "expect": [
+      "desktop:reminder|stretch|1800"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "remind me to buy milk",
+     "expect": [
+      "desktop:reminder|buy milk|"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "open downloads",
+     "expect": [
+      "desktop:openFolder|downloads"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "open the music folder",
+     "expect": [
+      "desktop:openFolder|music"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "open the chirp project",
+     "expect": [
+      "desktop:openFolder|chirp"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "open chirp in kiro",
+     "expect": [
+      "desktop:openProject|chirp|kiro"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "search youtube for lofi beats",
+     "expect": [
+      "desktop:siteSearch|youtube|lofi beats"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "search for swiftui tutorials on youtube",
+     "expect": [
+      "desktop:siteSearch|youtube|swiftui tutorials"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "play daft punk on youtube",
+     "expect": [
+      "desktop:siteSearch|youtube|daft punk"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "directions to bole airport",
+     "expect": [
+      "desktop:siteSearch|maps|bole airport"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "dark mode",
+     "expect": [
+      "desktop:system|darkMode|toggle"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "turn off dark mode",
+     "expect": [
+      "desktop:system|darkMode|off"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "turn off the screen",
+     "expect": [
+      "desktop:system|screenOff"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "open antigravity with 3 terminals",
+     "expect": [
+      "desktop:openApp|antigravity",
+      "desktop:ide:openTerminals|3|"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "open 3 terminals side by side",
+     "expect": [
+      "desktop:ide:openTerminals|3|"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "open 3 terminals running claude, freebuff and npm run dev",
+     "expect": [
+      "desktop:ide:openTerminals|3|claude,freebuff,npm run dev"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "run claude on one of the terminals",
+     "expect": [
+      "desktop:ide:send|any|claude|submit"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "run npm run dev in terminal 2",
+     "expect": [
+      "desktop:ide:send|2|npm run dev|submit"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "in terminal 3 run npm test",
+     "expect": [
+      "desktop:ide:send|3|npm test|submit"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "run claude in the first, freebuff in the second and npm run dev in the third",
+     "expect": [
+      "desktop:ide:send|1|claude|submit",
+      "desktop:ide:send|2|freebuff|submit",
+      "desktop:ide:send|3|npm run dev|submit"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "tell terminal 1 to fix the login bug",
+     "expect": [
+      "desktop:ide:send|1|fix the login bug|submit"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "type hello in terminal 2",
+     "expect": [
+      "desktop:ide:send|2|hello|type"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "split the terminal into 3",
+     "expect": [
+      "desktop:ide:openTerminals|3|"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "close the terminals",
+     "expect": [
+      "desktop:ide:closeTerminals"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "ask antigravity to explain this file",
+     "expect": [
+      "desktop:ide:chat|explain this file|submit"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "ask claude desktop to summarize my day",
+     "expect": [
+      "desktop:sendMessageToApp|claude|summarize my day"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "hey vox please run kilo",
+     "expect": [
+      "launch|kilo|~/Projects|"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "fly me to the moon",
+     "expect": [
+      "llm|fly me to the moon"
+     ]
+    }
+   ]
+  }
+ ]
+}

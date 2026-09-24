@@ -18,3 +18,9 @@ packages/.build/
 *.swp
 *.swo
 *~
+
+# Node / Windows agent
+node_modules/
+windows/public/
+dist/
+_to_delete/

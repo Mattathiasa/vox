@@ -1,0 +1,11 @@
+{
+  "tools": [
+    { "name": "claude", "aliases": ["claude code", "cloud code"], "command": "claude", "defaultDirectory": "~/Projects" },
+    { "name": "freebuff", "aliases": ["free buff", "freebuf"], "command": "freebuff", "defaultDirectory": "~/Projects" },
+    { "name": "kilo", "aliases": ["kilo code"], "command": "kilo", "defaultDirectory": "~/Projects" }
+  ],
+  "projects": [
+    { "name": "vox", "aliases": ["box", "this project"], "path": "~/Projects/vox" },
+    { "name": "chirp", "aliases": ["chip"], "path": "~/Projects/chirp" }
+  ]
+}

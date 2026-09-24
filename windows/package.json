@@ -1,0 +1,22 @@
+{
+  "name": "vox-windows",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Vox for Windows: voice/phone control of your PC and CLI tools (claude, kilo, freebuff) in native terminals.",
+  "type": "module",
+  "main": "src/main.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/main.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "@xterm/headless": "^5.5.0",
+    "qrcode": "^1.5.4"
+  },
+  "optionalDependencies": {
+    "@lydell/node-pty": "^1.1.0"
+  }
+}

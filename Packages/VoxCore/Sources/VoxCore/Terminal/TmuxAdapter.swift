@@ -145,7 +145,9 @@ public struct TmuxAdapter: Sendable {
 
     /// Keys the HUD's terminal buttons may send. Anything else is refused.
     public static let allowedKeys: Set<String> = [
-        "Enter", "Escape", "Up", "Down", "Left", "Right", "Tab", "BTab", "C-c", "C-d", "C-l"
+        "Enter", "Escape", "Up", "Down", "Left", "Right", "Tab", "BTab", "C-c", "C-d", "C-l",
+        // Live typing (phone remote / Mac tiles): Backspace, forward delete, Home/End, PgUp/PgDn
+        "BSpace", "DC", "Home", "End", "PPage", "NPage"
     ]
 
     public func sendKey(session: String, key: String) throws {

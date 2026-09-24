@@ -125,6 +125,21 @@ public actor VoxEngine {
         }
     }
 
+    /// Live typing (phone remote, Mac tiles): literal keystrokes, no Enter, no safety check.
+    /// It's the owner typing key by key where they can see it, like a real terminal; the
+    /// confirmation rules apply to whole commands (send/tell), not single keystrokes.
+    public func type(_ text: String, inTool tool: String) -> [EngineEvent] {
+        guard !text.isEmpty else { return [] }
+        let session = SessionNaming.sessionName(forTool: tool)
+        guard tmux.hasSession(session) else { return [EngineEvent(.warning, "\(tool) isn't running.")] }
+        do {
+            try tmux.type(session: session, text: String(text.prefix(4000)))
+            return []
+        } catch {
+            return [EngineEvent(.error, String(describing: error))]
+        }
+    }
+
     private func run(_ actions: [RouterAction]) async -> [EngineEvent] {
         var events: [EngineEvent] = []
         var needsFocusDelay = false

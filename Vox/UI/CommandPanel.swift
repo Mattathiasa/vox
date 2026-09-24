@@ -738,7 +738,8 @@ struct HUDView: View {
                                  unlink: { appState.exitPassThrough() },
                                  kill: { appState.killTool(screen.tool) },
                                  send: { appState.sendToTool(screen.tool, $0) },
-                                 press: { appState.pressKey($0, inTool: screen.tool) })
+                                 press: { appState.pressKey($0, inTool: screen.tool) },
+                                 typeLive: { appState.typeInTool(screen.tool, $0) })
                         .frame(height: tileHeight)
                 }
             }
@@ -1305,12 +1306,15 @@ struct TerminalTile: View {
     let kill: () -> Void
     var send: (String) -> Void = { _ in }
     var press: (String) -> Void = { _ in }
+    /// Live typing: keystrokes go straight to the tool (click the screen to start).
+    var typeLive: (String) -> Void = { _ in }
 
     static let titleHeight: Double = 40
     static let barHeight: Double = 46
 
     @State private var command = ""
     @FocusState private var commandFocused: Bool
+    @FocusState private var screenFocused: Bool
 
     /// (label, tmux key, help)
     static let keys: [(String, String, String)] = [
@@ -1335,6 +1339,25 @@ struct TerminalTile: View {
             }
             .defaultScrollAnchor(.bottomLeading)
             .background(Color.black.opacity(0.62), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+            .overlay(alignment: .topTrailing) {
+                if screenFocused {
+                    Label("Typing live · Esc key goes to \(screen.tool) · click the field below to stop", systemImage: "keyboard")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 8).padding(.vertical, 4)
+                        .background(HUDPalette.success.opacity(0.85), in: Capsule())
+                        .padding(8)
+                        .allowsHitTesting(false)
+                }
+            }
+            .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous)
+                .strokeBorder(HUDPalette.success.opacity(screenFocused ? 0.9 : 0), lineWidth: 2))
+            // Click the screen, then type: like a real terminal.
+            .focusable(!screen.exited)
+            .focusEffectDisabled()
+            .focused($screenFocused)
+            .onKeyPress(phases: [.down, .repeat]) { key in handleLiveKey(key) }
+            .simultaneousGesture(TapGesture().onEnded { if !screen.exited { screenFocused = true } })
             .padding(.horizontal, 8)
             commandBar
         }
@@ -1395,6 +1418,36 @@ struct TileButton: View {
 }
 
 extension TerminalTile {
+    /// Live typing: special keys become tmux key names (the engine's allowlist), text is typed literally.
+    func handleLiveKey(_ key: KeyPress) -> KeyPress.Result {
+        if key.modifiers.contains(.command) { return .ignored }   // ⌘C/⌘V/⌘W stay with the Mac
+        if key.modifiers.contains(.control) {
+            let letter = key.key.character.lowercased()
+            guard ["c", "d", "l"].contains(letter) else { return .ignored }
+            press("C-" + letter)
+            return .handled
+        }
+        let named: [(KeyEquivalent, String)] = [
+            (.return, "Enter"), (.escape, "Escape"), (.upArrow, "Up"), (.downArrow, "Down"),
+            (.leftArrow, "Left"), (.rightArrow, "Right"), (.delete, "BSpace"), (.deleteForward, "DC"),
+            (.home, "Home"), (.end, "End"), (.pageUp, "PPage"), (.pageDown, "NPage")
+        ]
+        if key.key == .tab {
+            press(key.modifiers.contains(.shift) ? "BTab" : "Tab")
+            return .handled
+        }
+        if let match = named.first(where: { $0.0 == key.key }) {
+            press(match.1)
+            return .handled
+        }
+        let text = key.characters
+        guard !text.isEmpty, !text.unicodeScalars.contains(where: { CharacterSet.controlCharacters.contains($0) }) else {
+            return .ignored
+        }
+        typeLive(text)
+        return .handled
+    }
+
     /// Type a command for this tool and press Return; keycaps for TUIs.
     var commandBar: some View {
         HStack(spacing: 6) {

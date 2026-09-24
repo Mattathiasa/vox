@@ -51,6 +51,9 @@ Vox/                     macOS app (thin): SwiftUI + AppKit only
   UI/                    CommandPanel (non-activating NSPanel + view), MenuContent, SettingsView
 project.yml              XcodeGen spec (Vox.xcodeproj is generated and gitignored)
 scripts/                 bootstrap.sh, test.sh
+web/remote/              Phone web app (PWA), served by the Mac app and the Windows agent
+windows/                 Vox for Windows (Node.js agent): grammar port, ConPTY terminals, PowerShell desktop
+shared/                  grammar-cases.json: phrases both the Swift and Node grammars must agree on
 extensions/vox-bridge/   IDE extension (plain JS) + packaged .vsix; install with scripts/Install-IDE-Bridge.command
 docs/ARCHITECTURE.md     Design, state machine, decisions log
 ```
@@ -81,7 +84,18 @@ docs/ARCHITECTURE.md     Design, state machine, decisions log
 5. Listening is push-to-talk (⌥Space) or the wake word ("Balcha", owner's explicit request 2026-09-23,
    toggle in the menu). The wake listener must stay on-device when supported, never record audio to
    disk, and never bypass confirmations: a wake-word command goes through the same router and safety policy as typed text.
-6. Any local server (IDE bridge) binds `127.0.0.1` and checks a shared secret.
+6. Any local server binds `127.0.0.1` and checks a shared secret. **Exception (owner's decision 2026-09-24):**
+   the phone remote (Phase 8) may bind all interfaces only when the owner turns on "Allow on home Wi-Fi";
+   it is off by default, every `/api/*` call needs the pairing code (constant-time compare, lockout after
+   repeated failures), and phone commands go through the same router and safety policy as voice.
+   The pairing code never goes in a URL query string (only the `#pair=` fragment, which browsers don't send).
+7. The Windows agent (Phase 9) follows the same rules: tools start only from config `tools[].command`;
+   spoken text reaches PowerShell only through environment variables or stdin, never inside the script text.
+
+**Two grammars (Mac Swift, Windows JS)**
+- A grammar change on one side needs the same change on the other, plus a case in `shared/grammar-cases.json`.
+  `node --test windows/test` runs anywhere (including the cloud); the Swift side runs in Verify.command.
+- After editing `web/remote/`, run `node scripts/embed-web.mjs` (regenerates the Mac's embedded copy; a test fails if it's stale).
 
 **Tests**
 - Every parser/router behaviour change gets a test. Misheard phrasings from real use become test cases.
