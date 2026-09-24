@@ -1,5 +1,6 @@
 // Port of VoxCore/Engine/VoxEngine.swift for Windows: executes router actions with
 // native terminals (TerminalHost) and Windows desktop control.
+import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { SessionRouter, HELP_TEXT } from "./router.js";
@@ -119,7 +120,11 @@ export class VoxEngine {
       events.push(ev("info", `${tool.name} is already running. Talking to it now.`));
     } else {
       if (this.terminals.has(tool.name)) this.terminals.kill(tool.name);
-      const cwd = directory ? path.resolve(expandHome(directory)) : os.homedir();
+      let cwd = directory ? path.resolve(expandHome(directory)) : os.homedir();
+      if (!fs.existsSync(cwd)) {
+        events.push(ev("warning", `${directory} doesn't exist; starting ${tool.name} in your home folder.`));
+        cwd = os.homedir();
+      }
       try {
         await this.terminals.start(tool.name, tool.command, cwd, this.size);
       } catch (error) {

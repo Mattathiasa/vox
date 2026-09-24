@@ -51,3 +51,10 @@ test("pairing codes and lockout", () => {
   assert.ok(!lock.blocked("x"));
 });
 test("session names", () => { assert.equal(slug("Free Buff!"), "free-buff"); });
+
+import { defaultProjectsDir, starterConfig } from "../src/config.js";
+test("Windows starter uses D:\\Projects when it exists", () => {
+  assert.equal(defaultProjectsDir(() => true), "D:\\Projects");
+  assert.equal(defaultProjectsDir(() => false), "~/Projects");
+  assert.ok(starterConfig("D:\\Projects").tools.every((t) => t.defaultDirectory === "D:\\Projects"));
+});

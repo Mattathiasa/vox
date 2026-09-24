@@ -57,6 +57,15 @@ export const WINDOWS_STARTER = {
   },
 };
 
+/** Owner keeps projects in D:\\Projects on the PC; use it when it exists, else ~/Projects. */
+export function defaultProjectsDir(exists = fs.existsSync) {
+  return exists("D:\\Projects") ? "D:\\Projects" : "~/Projects";
+}
+
+export function starterConfig(projectsDir = defaultProjectsDir()) {
+  return { ...WINDOWS_STARTER, tools: WINDOWS_STARTER.tools.map((t) => ({ ...t, defaultDirectory: projectsDir })) };
+}
+
 export function configDir() {
   const base = process.env.APPDATA || path.join(os.homedir(), ".config");
   return path.join(base, "Vox");
@@ -65,7 +74,7 @@ export function configDir() {
 export function loadConfig(file = path.join(configDir(), "config.json")) {
   if (!fs.existsSync(file)) {
     fs.mkdirSync(path.dirname(file), { recursive: true });
-    fs.writeFileSync(file, JSON.stringify(WINDOWS_STARTER, null, 2));
+    fs.writeFileSync(file, JSON.stringify(starterConfig(), null, 2));
   }
   return { file, config: normalizeConfig(JSON.parse(fs.readFileSync(file, "utf8"))) };
 }

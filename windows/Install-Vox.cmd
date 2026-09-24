@@ -27,7 +27,11 @@ if errorlevel 1 (
   pause
   exit /b 1
 )
-if not exist "%USERPROFILE%\Projects" mkdir "%USERPROFILE%\Projects"
+if exist "D:\" (
+  if not exist "D:\Projects" mkdir "D:\Projects"
+) else (
+  if not exist "%USERPROFILE%\Projects" mkdir "%USERPROFILE%\Projects"
+)
 echo Creating the Start menu shortcut "Vox"...
 set "VOX_HOME=%~dp0"
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$s=(New-Object -ComObject WScript.Shell).CreateShortcut([Environment]::GetFolderPath('Programs')+'\Vox.lnk'); $s.TargetPath=$env:VOX_HOME+'Start-Vox.cmd'; $s.WorkingDirectory=$env:VOX_HOME; $s.WindowStyle=7; $s.Description='Vox voice assistant'; $s.Save()"
