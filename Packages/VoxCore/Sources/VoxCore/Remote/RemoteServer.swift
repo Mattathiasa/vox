@@ -35,9 +35,16 @@ public final class RemoteServer: @unchecked Sendable {
     public func start() throws {
         let parameters = NWParameters.tcp
         parameters.allowLocalEndpointReuse = true
-        if !allowLAN { parameters.requiredInterfaceType = .loopback }
         guard let nwPort = NWEndpoint.Port(rawValue: port) else { throw RemoteServerError.badPort }
-        let listener = try NWListener(using: parameters, on: nwPort)
+        let listener: NWListener
+        if allowLAN {
+            listener = try NWListener(using: parameters, on: nwPort)
+        } else {
+            // Bind the socket itself to 127.0.0.1, not just filter by interface (lsof showed *:7788).
+            parameters.requiredInterfaceType = .loopback
+            parameters.requiredLocalEndpoint = .hostPort(host: "127.0.0.1", port: nwPort)
+            listener = try NWListener(using: parameters)
+        }
         listener.stateUpdateHandler = { [weak self] state in
             guard let self else { return }
             switch state {

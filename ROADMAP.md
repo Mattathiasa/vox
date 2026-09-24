@@ -25,18 +25,14 @@ Never mark `[x]` for something you could not run. Use `[w]` and say why in the L
   web app, and a Windows app for my gaming PC". Earlier phases' hands-on boxes are still open (owner testing).
 - **Current phases: 8 (phone remote) and 9 (Windows).** Web app + Windows agent are built and tested in the
   cloud (Node: 13 tests incl. real pseudo-terminals over HTTP; Playwright screenshots of the phone UI).
-  The **Swift side is written but NOT compiled yet** (cloud has no Swift): `VoxCore/Remote/*`,
-  `RemoteTests`, `GrammarParityTests`, `AppState` RemoteHost, Settings → Phone, live typing in tiles.
+  **Swift side now compiled and tested on the Mac** (184 tests incl. RemoteTests + GrammarParityTests; app builds;
+  server answers `/api/ping` on `127.0.0.1:7788` only). Settings → Phone UI itself not clicked through yet.
 - **Next (Claude Code on the Mac, in ~/Projects/vox), in order:**
-  1. `cd Packages/VoxCore && swift test` → fix compile errors in the new Remote files; then make
-     `GrammarParityTests` pass. If Swift and `shared/grammar-cases.json` disagree, **Swift is the reference**:
-     fix the JS port (`windows/src/parser.js`/`router.js`), regenerate nothing by hand, re-run `cd windows && npm test`.
-  2. `scripts/test.sh` (app build). New Vox/ files: none (all app code went into existing files), but run
-     `xcodegen generate` anyway if the build can't find `RemoteHost`/`PhoneSettings`.
-  3. Run the app, Settings → Phone → turn on; `curl -s localhost:7788/api/ping`; open
-     `http://127.0.0.1:7788/#pair=<code>` in Safari on the Mac and check the page.
-  4. Owner: Tailscale on Mac + iPhone → `scripts/Remote-Tailscale.command` → scan the QR.
-  5. Windows: `scripts/Package-Windows.command` → copy `dist/Vox-Windows.zip` to the PC → `Install-Vox.cmd`.
+  1. ~~swift test / parity / scripts/test.sh / curl ping~~ done 2026-09-24 (see Log).
+  2. Owner: Settings → Phone → check the toggle, QR and code show; open `http://127.0.0.1:7788/#pair=<code>`
+     in Safari; wrong code → 401 then lockout.
+  3. Owner: Tailscale on Mac + iPhone → `scripts/Remote-Tailscale.command` → scan the QR.
+  4. Windows: `scripts/Package-Windows.command` → copy `dist/Vox-Windows.zip` to the PC → `Install-Vox.cmd`.
 - **How agents verify on this Mac:** `scripts/Verify.command` (unit tests + app build → `.logs/verify.log`),
   `scripts/Verify-Tools.command` (real tmux + tools → `.logs/selftest.log`), `cd windows && npm test`.
 - **Blockers:** agents can't see Vox's own window; nobody has run the Windows agent on Windows yet.
@@ -53,8 +49,8 @@ Never mark `[x]` for something you could not run. Use `[w]` and say why in the L
 | 4 IDE bridge (terminals) | terminals done; chat pending | extension tested with mock; installed in Antigravity/Kiro/VS Code | reload + try |
 | 7a HUD | done | builds | owner reviewing |
 | 5, 6, 7 | see Log (5 parsing, 6 LLM fallback, 7 settings done by another session) | pass (176) | — |
-| 8 Phone remote | web app done; Swift written | web: Playwright vs. Windows agent; Swift: **not compiled** | pair a phone |
-| 9 Windows | agent done | 13 Node tests (grammar parity, router, HTTP, real pty) | install on the PC |
+| 8 Phone remote | done | web: Playwright; Swift: 184 tests pass, app builds, ping on 127.0.0.1:7788 | pair a phone |
+| 9 Windows | agent done | 13 Node tests on Mac + Swift parity 95/95 | install on the PC |
 
 ## Phase overview
 
@@ -305,9 +301,9 @@ tool's terminal live, type into one, and answer a confirmation, all without touc
 Design (see ARCHITECTURE "Remote protocol"): the Mac app serves `web/remote/` (one glass-style PWA) plus a small
 JSON API on port 7788. Every command goes through the **same router and safety policy** as voice. Off by default.
 
-- [w] `VoxCore/Remote/`: HTTP request parser, response writer, API routing (`RemoteRoute`), bearer-token check
+- [x] `VoxCore/Remote/`: HTTP request parser, response writer, API routing (`RemoteRoute`), bearer-token check
       (constant time), failed-token lockout, state JSON (`RemoteState`): pure, unit-tested
-- [w] `VoxCore/Remote/RemoteServer.swift`: Network-framework listener. Default binds `127.0.0.1` (Tailscale Serve
+- [x] `VoxCore/Remote/RemoteServer.swift`: Network-framework listener. Default binds `127.0.0.1` (Tailscale Serve
       proxies to it); "Allow on home Wi-Fi" switch binds all interfaces. Web assets embedded (`RemoteWebAssets.swift`, generated)
 - [w] App: pairing code in the Keychain, Settings → Phone tab (on/off, Wi-Fi switch, URL, QR code, new code), phone commands in the log
 - [x] `web/remote/`: pairing via `#pair=` link/QR, Siri-style status, command box, mic button (Web Speech API on HTTPS),
@@ -317,7 +313,7 @@ JSON API on port 7788. Every command goes through the **same router and safety p
 - [w] `scripts/Remote-Tailscale.command`: runs `tailscale serve --bg 7788` and prints the HTTPS URL
 
 **Verification**
-- [ ] Unit tests for parser/routing/auth/lockout pass (Verify.command)
+- [x] Unit tests for parser/routing/auth/lockout pass (`scripts/test.sh`, 2026-09-24)
 - [ ] Mac: phone page loads at `http://127.0.0.1:7788`, pairing works, wrong code → 401 then lockout
 - [ ] iPhone over Tailscale HTTPS: mic button works, "open safari" runs on the Mac
 - [ ] Android Chrome over Tailscale: same
@@ -338,17 +334,32 @@ shared phrase list `shared/grammar-cases.json` is checked by **both** the Swift 
 - [x] Server: same Remote protocol as the Mac, same `web/remote/` app; token in `%APPDATA%\Vox\remote-token`
 - [w] Windows UI: the web app opened as an Edge app window on `http://localhost:7788` (mic works on localhost), tray-less first version
 - [w] Install: `windows/Install-Vox.cmd` (checks Node, `npm ci`, creates config, shortcut), `Start-Vox.cmd`
-- [~] Parity: `shared/grammar-cases.json` + `GrammarParityTests.swift` + `windows/test/parity.test.js`
+- [x] Parity: `shared/grammar-cases.json` + `GrammarParityTests.swift` + `windows/test/parity.test.js`
 - [ ] Later: IDE bridge on Windows (Antigravity/Kiro), on-device wake word (Vosk), tray icon
 
 **Verification**
 - [x] `node --test` passes in the cloud (grammar, router, safety, protocol, pty with a fake)
 - [ ] Owner's PC: install script runs, "run claude" works, phone controls it over Tailscale
-- [ ] Parity tests pass on both sides
+- [x] Parity tests pass on both sides (Swift 95/95 cases, Node 13/13, 2026-09-24)
 
 ## Log
 
 Newest first. One entry per work session: date, who, what changed, **how it was verified**.
+
+### 2026-09-24 10:00 · Phases 8 + 9: first Swift compile of the remote + parity (Claude Code on the Mac)
+
+- `swift test`: the Remote files compiled with **no errors** as written; 184 tests, 0 failures, 1 skip (pre-macOS-15 LLM test).
+  `GrammarParityTests` passes all 95 shared cases, so Swift and the JS port already agree: no change to `windows/src`.
+- `cd windows && npm test`: first run failed only because `node_modules` was missing; after `npm ci` → 13/13 pass.
+  `node scripts/embed-web.mjs --check`: embedded web copy up to date.
+- **Fix (invariant 6):** with "home Wi-Fi" off, `lsof` showed the listener on `*:7788` (IPv6 wildcard). Only the
+  `requiredInterfaceType = .loopback` filter kept the LAN out (connecting from 192.168.100.10 was refused). `RemoteServer` now binds
+  `requiredLocalEndpoint = 127.0.0.1:7788` as well; `lsof` now shows `127.0.0.1:7788 (LISTEN)`.
+- `scripts/test.sh` → exit 0, `==> OK` (the `error: … exit code 0` line is xcodebuild `-quiet` noise about a warning at AppState.swift:88).
+- Ran the Debug app with Phone on (set `defaults write com.mattathiasa.vox remoteEnabled -bool true`, which is exactly what the
+  toggle stores; agents can't see Vox's window). `curl localhost:7788/api/ping` → `200 {"name":"Vox","platform":"mac","version":1}`;
+  `GET /` → 200; `/api/state` without a code → 401; LAN IP → connection refused.
+- Not done: clicking the Settings → Phone toggle, pairing in Safari, lockout by hand, phone over Tailscale.
 
 ### 2026-09-24 09:40 · Phases 8 + 9: phone remote and Vox for Windows (cloud session)
 
