@@ -39,11 +39,23 @@ jobs:
     needs: [mac, windows]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with: { merge-multiple: true }
+      - name: Release notes from CHANGELOG.md
+        run: |
+          awk -v tag="## ${GITHUB_REF_NAME} " 'index($0, tag) == 1 { on = 1; next } on && /^## / { exit } on { print }' CHANGELOG.md > notes.md
+          cat >> notes.md <<'NOTES'
+
+          ### Install (unsigned beta)
+          - **Mac:** unzip, move Vox to Applications, open it once, then System Settings → Privacy & Security → **Open Anyway**. Needs `brew install tmux`.
+          - **Windows:** install Node.js 20+ (`winget install OpenJS.NodeJS.LTS`), unzip, run **Install-Vox.cmd** (SmartScreen: More info → Run anyway).
+          - **Phone:** Tailscale on computer + phone, then scan the pairing QR. Details: https://mattathiasa.github.io/vox/#download
+          NOTES
+          sed -i 's/^          //' notes.md
+          cat notes.md
       - name: Create the release
         env: { GH_TOKEN: "${{ github.token }}" }
         run: |
           gh release create "${GITHUB_REF_NAME}" Vox-mac.zip Vox-Windows.zip --repo "${GITHUB_REPOSITORY}" \
-            --title "Vox ${GITHUB_REF_NAME} (beta, unsigned)" --prerelease \
-            --notes "Unsigned beta. Mac: unzip, move Vox to Applications, open it once, then System Settings → Privacy & Security → Open Anyway. Windows: unzip, run Install-Vox.cmd (SmartScreen: More info → Run anyway). Phone: see the README."
+            --title "Vox ${GITHUB_REF_NAME} (beta)" --prerelease --notes-file notes.md
