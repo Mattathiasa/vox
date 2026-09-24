@@ -1,37 +1,70 @@
-# Push a tag like v0.1.0 to build unsigned beta downloads and attach them to a GitHub Release:
-#   Vox-mac.zip      (ad-hoc signed; users choose "Open Anyway" once in System Settings)
-#   Vox-Windows.zip  (Node agent; Install-Vox.cmd)
-# The landing page links to releases/latest/download/<name>, so names must stay the same.
+# Push a tag like v0.1.0 to build the downloads and publish a GitHub Release:
+#   Vox-mac.zip      Vox.app (Release, universal), ad-hoc signed; open once via System Settings → Open Anyway
+#   Vox-Windows.zip  Vox for Windows with its own node.exe and prebuilt dependencies: unzip → Install-Vox.cmd
+# The landing page links to releases/latest/download/<name>. "latest" never points at a prerelease,
+# so releases are published as normal releases (the title says "beta") and the names must not change.
 name: Release
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag: { description: "Existing tag to (re)build, e.g. v0.1.0", required: true }
 
 permissions:
   contents: write
 
+env:
+  TAG: ${{ github.event.inputs.tag || github.ref_name }}
+
 jobs:
   mac:
     runs-on: macos-26
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
+        with: { ref: "${{ env.TAG }}" }
       - run: brew install xcodegen
       - name: Build Release (unsigned) and ad-hoc sign
         run: |
           xcodegen generate
-          xcodebuild -project Vox.xcodeproj -scheme Vox -configuration Release -destination 'platform=macOS' \
-            -derivedDataPath build CODE_SIGNING_ALLOWED=NO build -quiet
+          xcodebuild -project Vox.xcodeproj -scheme Vox -configuration Release -destination 'generic/platform=macOS' \
+            -derivedDataPath build ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO build -quiet
           APP=build/Build/Products/Release/Vox.app
           codesign --force --deep --options runtime --entitlements Vox/Vox.entitlements -s - "$APP"
+          codesign --verify --deep --strict "$APP"
+          lipo -archs "$APP/Contents/MacOS/Vox"
           ditto -c -k --keepParent "$APP" Vox-mac.zip
       - uses: actions/upload-artifact@v4
         with: { name: mac, path: Vox-mac.zip }
 
   windows:
-    runs-on: ubuntu-latest
+    # Built on Windows so npm installs the win32 prebuilt terminal module (node-pty/ConPTY).
+    runs-on: windows-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - run: scripts/package-windows.sh && mv dist/Vox-Windows.zip .
+        with: { ref: "${{ env.TAG }}" }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Test on real Windows first
+        working-directory: windows
+        run: npm ci && npm test
+      - name: Package (bundled node.exe + production dependencies)
+        shell: pwsh
+        run: |
+          $out = "dist/Vox-Windows"
+          New-Item -ItemType Directory -Force $out | Out-Null
+          Copy-Item -Recurse windows/src, windows/package.json, windows/package-lock.json, windows/README.md, LICENSE $out
+          Copy-Item windows/*.cmd $out
+          Copy-Item -Recurse web/remote "$out/public"
+          Push-Location $out
+          npm ci --omit=dev --no-audit --no-fund
+          Pop-Location
+          New-Item -ItemType Directory -Force "$out/node" | Out-Null
+          Copy-Item (Get-Command node).Source "$out/node/node.exe"
+          & "$out/node/node.exe" -e "require('@lydell/node-pty'); console.log('node-pty OK', process.version)"
+          Compress-Archive -Path $out -DestinationPath Vox-Windows.zip
       - uses: actions/upload-artifact@v4
         with: { name: windows, path: Vox-Windows.zip }
 
@@ -40,22 +73,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with: { ref: "${{ env.TAG }}" }
       - uses: actions/download-artifact@v4
         with: { merge-multiple: true }
       - name: Release notes from CHANGELOG.md
         run: |
-          awk -v tag="## ${GITHUB_REF_NAME} " 'index($0, tag) == 1 { on = 1; next } on && /^## / { exit } on { print }' CHANGELOG.md > notes.md
-          cat >> notes.md <<'NOTES'
-
-          ### Install (unsigned beta)
-          - **Mac:** unzip, move Vox to Applications, open it once, then System Settings → Privacy & Security → **Open Anyway**. Needs `brew install tmux`.
-          - **Windows:** install Node.js 20+ (`winget install OpenJS.NodeJS.LTS`), unzip, run **Install-Vox.cmd** (SmartScreen: More info → Run anyway).
-          - **Phone:** Tailscale on computer + phone, then scan the pairing QR. Details: https://mattathiasa.github.io/vox/#download
-          NOTES
-          sed -i 's/^          //' notes.md
+          awk -v tag="## ${TAG} " 'index($0, tag) == 1 { on = 1; next } on && /^## / { exit } on { print }' CHANGELOG.md > notes.md
+          {
+            echo
+            echo "### Install (beta, unsigned)"
+            echo "- **Mac:** unzip, drag Vox to Applications, open it once, then System Settings → Privacy & Security → **Open Anyway**. Agents need \`brew install tmux\`."
+            echo "- **Windows:** unzip, run **Install-Vox.cmd** (SmartScreen: More info → Run anyway). Node.js is included."
+            echo "- **Phone:** install Tailscale on the computer and phone, then scan the pairing QR. Guide: https://mattathiasa.github.io/vox/#download"
+            echo
+            echo "SHA-256:"
+            echo '```'
+            sha256sum Vox-mac.zip Vox-Windows.zip
+            echo '```'
+          } >> notes.md
           cat notes.md
-      - name: Create the release
+      - name: Create or update the release
         env: { GH_TOKEN: "${{ github.token }}" }
         run: |
-          gh release create "${GITHUB_REF_NAME}" Vox-mac.zip Vox-Windows.zip --repo "${GITHUB_REPOSITORY}" \
-            --title "Vox ${GITHUB_REF_NAME} (beta)" --prerelease --notes-file notes.md
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" Vox-mac.zip Vox-Windows.zip --clobber --repo "$GITHUB_REPOSITORY"
+            gh release edit "$TAG" --notes-file notes.md --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$TAG" Vox-mac.zip Vox-Windows.zip --repo "$GITHUB_REPOSITORY" \
+              --title "Vox ${TAG} (beta)" --latest --notes-file notes.md
+          fi

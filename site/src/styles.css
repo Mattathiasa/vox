@@ -319,6 +319,11 @@ main { width: min(1200px, calc(100% - 48px)); margin: 0 auto; }
 .clone code { background: none; padding: 0; font-size: 13.5px; color: #d6e6ff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .clone span { font-size: 13px; font-weight: 700; color: #c7b3ff; white-space: nowrap; }
 
+.phone-qr { display: flex; align-items: center; gap: 14px; margin: 18px 0 14px; padding: 12px; border-radius: 18px; background: rgba(255,255,255,.05); border: 1px solid var(--edge); }
+.phone-qr img { width: 104px; height: 104px; border-radius: 12px; background: #fff; padding: 4px; flex: none; }
+.phone-qr p { font-size: 14px; color: var(--muted); }
+.phone-qr b { color: var(--text); }
+
 /* ── Releases ── */
 .timeline { display: grid; gap: 12px; max-width: 900px; margin: 0 auto; }
 .release { border-radius: 24px; overflow: hidden; }

@@ -6,10 +6,15 @@ timers, quick answers. Same phone web app as the Mac version.
 
 ## Install (once)
 
-1. Install Node.js 20+: `winget install OpenJS.NodeJS.LTS`
-2. Copy this folder to the PC (e.g. `C:\Users\<you>\Vox`); keep `public\` (or `..\web\remote`) next to it.
-3. Double-click **Install-Vox.cmd**. It installs dependencies and adds **Vox** to the Start menu.
-4. Start **Vox**. A window opens at `http://localhost:7788` (hold the mic button and talk, or type).
+1. Download **Vox-Windows.zip** from https://mattathiasa.github.io/vox/#download (or GitHub Releases) and unzip it,
+   e.g. to `C:\Users\<you>\Vox`. The release zip includes Node.js and all dependencies.
+2. Double-click **Install-Vox.cmd** (SmartScreen: *More info → Run anyway*). It checks everything, adds **Vox**
+   to the Start menu and desktop, and starts it.
+3. A window opens at `http://localhost:7788`. Hold the mic button and talk, or type. "run claude" starts
+   Claude Code in `D:\Projects` (or `%USERPROFILE%\Projects`).
+
+From a source checkout instead: install Node 20+ (`winget install OpenJS.NodeJS.LTS`), then run Install-Vox.cmd;
+it runs `npm install` for you.
 
 Config: `%APPDATA%\Vox\config.json`: `tools` (name, aliases, command, defaultDirectory), `projects`,
 `apps` (spoken name → exe, shortcut or URI such as `steam://open/main`), `remote.allowLAN`.

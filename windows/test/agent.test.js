@@ -1,5 +1,5 @@
 // End-to-end over HTTP: real server, real pseudo-terminals (bash here, ConPTY on Windows), fake desktop.
-import { test } from "node:test";
+import { test, after } from "node:test";
 import assert from "node:assert/strict";
 import { TerminalHost } from "../src/terminal.js";
 import { VoxEngine } from "../src/engine.js";
@@ -15,8 +15,12 @@ const config = normalizeConfig({ tools: [{ name: "echoer", aliases: ["echo tool"
 const calls = [];
 const fake = new Proxy({}, { get: (_, name) => async (...a) => { calls.push([name, ...a]); return name === "quitApp" ? true : ""; } });
 
+const hosts = [];
+after(() => hosts.forEach((h) => h.killAll()));
+
 async function start() {
   const terminals = new TerminalHost({ shell: win ? "cmd.exe" : "/bin/bash" });
+  hosts.push(terminals);
   const engine = new VoxEngine({ config, terminals, desktop: fake, apps: new AppCatalog([{ name: "Steam", target: "steam://open", key: "steam" }]), pause: async () => {} });
   const agent = new Agent({ engine, config, host: "test-pc" });
   const server = createServer({ agent, code: () => "secret-code", lockout: new Lockout({ limit: 3 }) });

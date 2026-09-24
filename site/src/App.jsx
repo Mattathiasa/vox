@@ -377,24 +377,27 @@ function Download({ latest, fromGitHub }) {
         </article>
         <article className={`dl spot reveal ${os === "windows" ? "suggested" : ""}`}>
           {os === "windows" && <span className="badge">Your system</span>}
-          <div className="dl-head"><Icon name="windows" size={28} /><div><h3>Windows</h3><p>Windows 10/11 · Node.js 20+</p></div></div>
+          <div className="dl-head"><Icon name="windows" size={28} /><div><h3>Windows</h3><p>Windows 10/11 · x64 · Node.js included</p></div></div>
           <a className="btn primary block" href={win?.url ?? LATEST_WIN}><Icon name="download" size={18} /> Download for Windows{win ? ` · ${formatSize(win.size)}` : ""}</a>
           <ol className="steps-list">
-            <li>Install Node: <code>winget install OpenJS.NodeJS.LTS</code></li>
-            <li>Unzip, double-click <b>Install-Vox.cmd</b>.</li>
-            <li>SmartScreen: <b>More info → Run anyway</b>.</li>
-            <li>Start <b>Vox</b> from the Start menu.</li>
+            <li>Unzip <b>Vox-Windows.zip</b> anywhere (e.g. your user folder).</li>
+            <li>Double-click <b>Install-Vox.cmd</b>. SmartScreen: <b>More info → Run anyway</b>.</li>
+            <li>Vox opens, and it's in your Start menu and on your desktop.</li>
+            <li>Say or type “run claude”: it starts in <code>D:\Projects</code> or <code>~\Projects</code>.</li>
           </ol>
         </article>
         <article className={`dl spot reveal ${os === "phone" ? "suggested" : ""}`}>
           {os === "phone" && <span className="badge">Your device</span>}
-          <div className="dl-head"><Icon name="phone" size={28} /><div><h3>Phone</h3><p>iPhone &amp; Android · no app store</p></div></div>
-          <a className="btn block" href="https://tailscale.com/download" target="_blank" rel="noreferrer">Get Tailscale (free)</a>
+          <div className="dl-head"><Icon name="phone" size={28} /><div><h3>Phone</h3><p>iPhone &amp; Android · installs from your computer</p></div></div>
+          <div className="phone-qr">
+            <img src={`${import.meta.env.BASE_URL}demo-qr.svg`} alt="QR code: open the Vox demo on your phone" width="104" height="104" />
+            <p><b>Try it on your phone now:</b> scan to open the live demo, then Share → Add to Home Screen.</p>
+          </div>
           <ol className="steps-list">
-            <li>Install Tailscale on your computer and phone.</li>
+            <li>Install Vox on your Mac or PC, and <a href="https://tailscale.com/download" target="_blank" rel="noreferrer">Tailscale</a> (free) on both.</li>
             <li>Mac: <code>scripts/Remote-Tailscale.command</code> · Windows: <b>Remote-Tailscale.cmd</b>.</li>
-            <li>Scan the QR in Vox → Settings → Phone, or ⋯ → Pair a phone.</li>
-            <li>Share → <b>Add to Home Screen</b>.</li>
+            <li>Scan the pairing QR in Vox → Settings → Phone, or ⋯ → Pair a phone.</li>
+            <li>Share → <b>Add to Home Screen</b>. Now your phone controls your computer.</li>
           </ol>
         </article>
       </div>
@@ -402,7 +405,7 @@ function Download({ latest, fromGitHub }) {
         <div><h3>Build from source</h3><p>Recommended for developers: sign with your own free Apple ID, and there are no warnings.</p></div>
         <button className="clone" onClick={copy} title="Copy"><code>{clone}</code><span>{copied ? "Copied ✓" : "Copy"}</span></button>
       </div>
-      <p className="center muted small">Needs tmux (Mac) and the AI agents you want to drive. All versions on <a href={RELEASES_URL}>GitHub Releases</a>.</p>
+      <p className="center muted small">Needs the AI agents you want to drive (Claude Code, Kilo…) and, on the Mac, <code>brew install tmux</code>. Checksums and all versions on <a href={RELEASES_URL}>GitHub Releases</a>.</p>
     </section>
   );
 }
@@ -431,7 +434,7 @@ function Releases({ releases, fromGitHub }) {
             <button className="release-head" onClick={() => setOpen(open === i ? -1 : i)} aria-expanded={open === i}>
               <span className={`tag ${i === 0 ? "latest" : ""}`}>{r.tag}</span>
               {i === 0 && <span className="pill-new">Latest</span>}
-              {r.prerelease !== false && <span className="pill-beta">Beta</span>}
+              {(r.prerelease || /^v0\./.test(r.tag)) && <span className="pill-beta">Beta</span>}
               <h3>{r.title}</h3>
               <time>{r.date}</time>
             </button>

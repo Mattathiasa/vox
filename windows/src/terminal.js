@@ -103,6 +103,11 @@ export class TerminalHost {
     return true;
   }
 
+  /** Kills every session (shutdown, tests). */
+  killAll() {
+    for (const name of [...this.sessions.keys()]) this.kill(name);
+  }
+
   /** Last `lines` lines of screen + scrollback, trailing blanks trimmed (like VoxEngine.tidy). */
   capture(tool, lines = 150) {
     const { term } = this.get(tool);

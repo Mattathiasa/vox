@@ -10,7 +10,7 @@
   },
   "scripts": {
     "start": "node src/main.js",
-    "test": "node --test test/*.test.js"
+    "test": "node --test --test-force-exit --test-timeout=120000 test/*.test.js"
   },
   "dependencies": {
     "@xterm/headless": "^5.5.0",

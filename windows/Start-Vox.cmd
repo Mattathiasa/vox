@@ -1,4 +1,6 @@
 @echo off
-rem Starts Vox for Windows (minimized console = the server; closing it stops Vox) and opens its window.
+rem Starts Vox for Windows (a minimized console runs the server; closing it stops Vox) and opens its window.
 cd /d "%~dp0"
-start "Vox" /min node src\main.js %*
+set "NODE=%~dp0node\node.exe"
+if not exist "%NODE%" set "NODE=node"
+start "Vox" /min "%NODE%" src\main.js %*

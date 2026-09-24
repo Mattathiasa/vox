@@ -20,9 +20,9 @@ The release workflow copies the section for a tag into its GitHub Release notes.
 
 ### Windows (beta)
 - Node.js agent with the same grammar (95 shared test conversations), native ConPTY terminals, PowerShell desktop control
-- Install-Vox.cmd, Start menu shortcut, Edge app window, Remote-Tailscale.cmd
+- Self-contained download (Node.js bundled), Install-Vox.cmd, Start menu + desktop shortcuts, Edge app window, Remote-Tailscale.cmd
 
 ### Known limitations
 - Builds are unsigned: macOS needs "Open Anyway" once; Windows shows SmartScreen
-- Windows: no wake word or IDE terminals yet; needs Node.js 20+
+- Windows: no wake word or IDE terminals yet
 - Mac: tmux must be installed (`brew install tmux`)

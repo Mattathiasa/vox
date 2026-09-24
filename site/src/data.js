@@ -76,12 +76,13 @@ export const SECURITY = [
 ];
 
 export const ROADMAP = [
-  { when: "Now", items: ["Mac app, phone remote, Windows agent (beta)", "Browser demo running the real grammar", "Unsigned builds on GitHub Releases"] },
-  { when: "Next", items: ["First-run setup wizard (permissions, tool picker)", "Windows: IDE terminals + on-device wake word", "Bundled Node runtime for a one-click Windows installer"] },
+  { when: "Now", items: ["Mac app, phone remote, Windows agent (beta)", "Browser demo running the real grammar", "Downloads on GitHub Releases (Windows includes Node.js)"] },
+  { when: "Next", items: ["First-run setup wizard (permissions, tool picker)", "Windows: IDE terminals + on-device wake word", "Signed Windows installer (no SmartScreen warning)"] },
   { when: "Later", items: ["Signed + notarized Mac builds", "SpeechAnalyzer / Whisper backends for better accuracy", "Push notifications when an agent finishes"] },
 ];
 
 export const FAQ = [
+  { q: "Do I need to install anything else?", a: "On Windows, no: the download includes Node.js. On the Mac, agents run in tmux (brew install tmux). And you need the AI agents themselves, such as Claude Code or Kilo." },
   { q: "Is Vox free?", a: "Yes, free and open source under the MIT license. You bring your own AI agents (Claude Code, Kilo, etc.), which have their own plans." },
   { q: "Why does macOS say it can't verify the developer?", a: "The beta isn't notarized yet (that needs Apple's paid developer program). Open it once, then System Settings → Privacy & Security → Open Anyway. Or build it from source with your own free Apple ID." },
   { q: "Does it record me or send my voice anywhere?", a: "On the Mac, speech is recognized on-device and audio is never saved. The phone and Windows use the browser's recognizer, which may use Apple, Google or Microsoft servers." },

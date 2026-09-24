@@ -72,6 +72,10 @@ server.listen(port, host, async () => {
   if (!args.has("--no-window") && process.platform === "win32") openWindow(local);
 });
 
+for (const signal of ["SIGINT", "SIGTERM", "SIGBREAK"]) {
+  process.on(signal, () => { terminals.killAll(); process.exit(0); });
+}
+
 function openWindow(url) {
   // Edge/Chrome "app" window: looks like a normal app, and the mic works on localhost.
   const candidates = [
