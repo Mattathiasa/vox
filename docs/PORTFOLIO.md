@@ -36,18 +36,18 @@ the prompt for you, and shows every running terminal live, on your Mac, your Win
 
 ## 5. Git repo
 
-`https://github.com/Mattathiasa/vox` *(push the local repo first; see Phase 10 in ROADMAP.md)*
+`https://github.com/Mattathiasa/vox`
 
 ## 6. Live display
 
-`https://vox-<name>.vercel.app` *(landing page: hero video, "Try it in your browser" demo, Download for Mac,
-Download for Windows, phone setup; see Phase 10)*
+Landing page: `https://mattathiasa.github.io/vox/` · Live demo: `https://mattathiasa.github.io/vox/demo/`
+(GitHub Pages, deployed by `.github/workflows/pages.yml`; downloads come from GitHub Releases)
 
 What a visitor can actually do there:
 - **Try it:** the phone UI running against a simulated computer *in the browser*, powered by the real
   command grammar (the same JavaScript the Windows app uses). Type or say "run claude and fix the login bug"
   and watch the fake terminal respond; "kill claude" asks for confirmation, and so on.
-- **Download:** Mac `.dmg` and Windows installer from GitHub Releases.
+- **Download:** `Vox-mac.zip` and `Vox-Windows.zip` (unsigned beta) from GitHub Releases, built by `.github/workflows/release.yml` on each `v*` tag.
 - **Watch:** a 60–90 s screen recording of the real thing (voice → agents → phone).
 
 ## 7. Long description
