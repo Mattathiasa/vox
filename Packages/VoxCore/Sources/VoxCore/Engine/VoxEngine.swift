@@ -20,12 +20,15 @@ public struct SessionScreen: Equatable, Sendable, Identifiable {
     public let tool: String
     public let text: String
     public let exited: Bool
+    /// What the tool is doing (approval prompt, working, idle), read off the screen.
+    public let activity: ToolActivity
     public var id: String { tool }
 
-    public init(tool: String, text: String, exited: Bool) {
+    public init(tool: String, text: String, exited: Bool, activity: ToolActivity? = nil) {
         self.tool = tool
         self.text = text
         self.exited = exited
+        self.activity = activity ?? ActivityDetector.classify(screen: text, exited: exited)
     }
 }
 
@@ -181,11 +184,31 @@ public actor VoxEngine {
         tmux.listSessions()
             .filter { !$0.hasPrefix(SessionNaming.prefix + "selftest") }
             .map { session in
-                SessionScreen(
+                let text = Self.tidy((try? tmux.capture(session: session, lines: lines)) ?? "")
+                let exited = tmux.isPaneDead(session)
+                return SessionScreen(
                     tool: String(session.dropFirst(SessionNaming.prefix.count)),
-                    text: Self.tidy((try? tmux.capture(session: session, lines: lines)) ?? ""),
-                    exited: tmux.isPaneDead(session))
+                    text: text,
+                    exited: exited,
+                    activity: ActivityDetector.classify(
+                        screen: text, exited: exited, patterns: .forTool(toolConfig(forSession: session))))
             }
+    }
+
+    private var attention = AttentionTracker()
+
+    /// Phase 12.1: call every second or two. Returns what's new since the last call:
+    /// a tool asking for approval, finishing its work, or exiting.
+    public func checkAttention() -> [AttentionAlert] {
+        guard config.attentionAlerts else { return [] }
+        let current = screens(lines: 60)
+        attention.keep(only: Set(current.map(\.tool)))
+        return current.compactMap { attention.update(tool: $0.tool, activity: $0.activity) }
+    }
+
+    /// The config entry a tmux session belongs to ("vox-claude" -> claude).
+    func toolConfig(forSession session: String) -> ToolConfig? {
+        config.tools.first { SessionNaming.sessionName(forTool: $0.name) == session }
     }
 
     /// Last size sent to each session, so resizes only happen on change.

@@ -1323,7 +1323,20 @@ struct TerminalTile: View {
         ("⇥", "Tab", "Tab"), ("⌃C", "C-c", "Interrupt (Ctrl-C)")
     ]
 
-    private var status: Color { screen.exited ? HUDPalette.error : (linked ? HUDPalette.success : accent) }
+    private var status: Color {
+        if screen.exited { return HUDPalette.error }
+        if screen.activity == .needsApproval { return HUDPalette.warning }
+        return linked ? HUDPalette.success : accent
+    }
+
+    private var stateLabel: String {
+        switch screen.activity {
+        case .exited: return "Exited"
+        case .needsApproval: return "Needs approval"
+        case .working: return linked ? "Talking · working" : "Working…"
+        case .idle: return linked ? "Talking" : "Click to talk"
+        }
+    }
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -1373,9 +1386,10 @@ struct TerminalTile: View {
             Circle().fill(status.gradient).frame(width: 9, height: 9)
             Text(screen.tool)
                 .font(.system(size: 13, weight: .semibold))
-            Text(screen.exited ? "Exited" : (linked ? "Talking" : "Click to talk"))
+            Text(stateLabel)
                 .font(.system(size: 11))
-                .foregroundStyle(screen.exited ? HUDPalette.error : .secondary)
+                .foregroundStyle(screen.exited ? HUDPalette.error
+                                 : screen.activity == .needsApproval ? HUDPalette.warning : .secondary)
                 .lineLimit(1)
                 .layoutPriority(-1)
             Spacer()

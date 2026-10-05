@@ -2,6 +2,7 @@ import AppKit
 import SwiftUI
 import ServiceManagement
 import SystemConfiguration
+@preconcurrency import UserNotifications
 import VoxCore
 
 struct LogLine: Identifiable, Equatable {
@@ -80,6 +81,9 @@ final class AppState: ObservableObject {
     private var wantsToListen = false
     private var engine: VoxEngine?
     private var outputTimer: Timer?
+    /// Phase 12.1: always on (not just while the HUD shows), so a tool asking for approval is heard.
+    private var attentionTimer: Timer?
+    private var checkingAttention = false
     private let configURL = ConfigStore.defaultURL
     /// Phone remote (Phase 8). Off until turned on in Settings → Phone.
     let remote = RemoteHost()
@@ -474,8 +478,55 @@ final class AppState: ObservableObject {
             pendingQuestion = nil
             append(.success, "Loaded \(config.tools.count) tools and \(apps.entries.count) apps.")
             startWakeListening()
+            startAttentionWatch()
         } catch {
             fail(String(describing: error))
+        }
+    }
+
+    // MARK: Tool attention (Phase 12.1)
+
+    private func startAttentionWatch() {
+        attentionTimer?.invalidate()
+        attentionTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.checkAttention() }
+        }
+    }
+
+    private func checkAttention() {
+        guard let engine, !checkingAttention else { return }
+        checkingAttention = true
+        Task {
+            let alerts = await engine.checkAttention()
+            checkingAttention = false
+            for alert in alerts { announce(alert) }
+        }
+    }
+
+    /// A tool needs approval, finished, or exited: log it, say it, and post a notification.
+    private func announce(_ alert: AttentionAlert) {
+        let kind: EngineEvent.Kind
+        switch alert.activity {
+        case .needsApproval: kind = .confirm
+        case .exited: kind = .warning
+        case .idle, .working: kind = .success
+        }
+        append(kind, "🔔 " + alert.message)
+        if speakFeedback {
+            voiceOut.say(alert.activity == .needsApproval
+                         ? alert.message + " Say approve or deny."
+                         : alert.message)
+        }
+        if alert.activity == .needsApproval { onWake?() }
+        refreshOutput()
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { granted, _ in
+            guard granted else { return }
+            let center = UNUserNotificationCenter.current()
+            let content = UNMutableNotificationContent()
+            content.title = "Vox"
+            content.body = alert.message
+            content.sound = alert.activity == .needsApproval ? .default : nil
+            center.add(UNNotificationRequest(identifier: "vox-\(alert.tool)", content: content, trigger: nil))
         }
     }
 
@@ -741,7 +792,7 @@ extension AppState {
             busy: isBusy,
             wake: .init(enabled: wakeEnabled, name: wakeName, phrases: wakeConfig.phrases),
             tools: toolNames,
-            screens: screens.map { RemoteState.Screen(tool: $0.tool, text: $0.text, exited: $0.exited) },
+            screens: screens.map { RemoteState.Screen(tool: $0.tool, text: $0.text, exited: $0.exited, activity: $0.activity.rawValue) },
             history: history.map {
                 RemoteState.Item(command: $0.command, kind: $0.kind.rawValue, reply: $0.reply,
                                  spoken: $0.spoken, source: $0.fromPhone ? "phone" : "local")

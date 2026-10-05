@@ -414,9 +414,12 @@ Tier 1 makes the Claude Code loop truly hands-free; do those first. Every gramma
 grammar plus a case in `shared/grammar-cases.json`.
 
 **Tier 1: driving AI tools**
-- [ ] 12.1 **Tool attention alerts.** Watch each tmux tool's screen; when it shows an approval prompt, goes idle
+- [w] 12.1 **Tool attention alerts.** Watch each tmux tool's screen; when it shows an approval prompt, goes idle
       after working, or exits, say so (spoken + macOS notification + phone state). Per-tool patterns in config
-      (`attentionPatterns`), sensible defaults for Claude Code / Codex / Gemini. Pure detector in VoxCore with tests.
+      (`approvalPatterns`/`busyPatterns`, global `attentionAlerts`), defaults for Claude Code / Codex / Gemini. Pure detector in VoxCore with tests.
+      Done: `Engine/ToolAttention.swift` (ActivityDetector + AttentionTracker), `VoxEngine.checkAttention()`, AppState watcher every 1.5 s
+      (log 🔔 + speech + notification; approval also shows the HUD), HUD tiles and phone show "Needs approval"/"Working…".
+      Core tested (8 tests); **owner:** hear "claude needs your approval" on a real prompt, allow the notification once.
 - [ ] 12.2 **Keys to a tool by voice.** "press escape", "shift tab", "arrow down", "press enter", "choose option 2",
       "approve" / "deny" while talking to a tool (and "press escape in claude" from anywhere). New `RouterAction.key`.
 - [ ] 12.3 **Read output back.** "what did claude say", "read the last answer", "read claude": speak the tail of the
@@ -449,6 +452,17 @@ grammar plus a case in `shared/grammar-cases.json`.
 ## Log
 
 Newest first. One entry per work session: date, who, what changed, **how it was verified**.
+
+### 2026-10-05 · Phase 12: audit → roadmap, then 12.1–12.4 (Claude Code on the Mac)
+
+- Added Phase 12 (completeness items from the audit). Each item below is its own commit.
+- **12.1 attention alerts:** `ToolAttention.swift` classifies a tool's screen (last 25 non-blank lines) as working /
+  needsApproval / idle / exited from per-tool substrings (defaults cover Claude Code, Codex, Gemini). `AttentionTracker` alerts
+  once per change: approval right away, "done" only after working → idle twice in a row (the busy line flickers), "exited" once.
+  `VoxEngine.checkAttention()`; `SessionScreen.activity`; phone state `screens[].activity`; AppState polls every 1.5 s even with
+  the HUD hidden and speaks + notifies + logs. Verified: `scripts/test.sh` OK (197 tests, 8 new in `AttentionTests`, real Claude
+  screens as fixtures), app builds with no new warnings, `npm test` 18/18 (embedded web copy regenerated). Not verified: hearing it
+  on a real approval prompt, the notification permission prompt.
 
 ### 2026-09-24 · Phase 11 W0: Windows baseline verified on the owner's PC + spikes (on Windows)
 

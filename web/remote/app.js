@@ -181,10 +181,10 @@ function renderTerminals(s) {
     const head = document.createElement("div");
     head.className = "tcard-head";
     const dot = document.createElement("span");
-    dot.className = `dot ${screen.exited ? "bad" : "ok"}`;
+    dot.className = `dot ${activityDot(screen)}`;
     const state = document.createElement("span");
     state.className = "state";
-    state.textContent = screen.exited ? "Exited" : "Tap to open";
+    state.textContent = activityLabel(screen, "Tap to open");
     head.append(dot, text(screen.tool), state);
     const pre = document.createElement("pre");
     pre.textContent = tail(screen.text, 14);
@@ -193,6 +193,19 @@ function renderTerminals(s) {
     return card;
   });
   box.replaceChildren(...cards);
+}
+
+// Phase 12.1: what the tool is doing, read off its screen by the Mac/PC ("needsApproval", "working", "idle", "exited").
+function activityDot(screen) {
+  if (screen.exited) return "bad";
+  return screen.activity === "needsApproval" ? "warn" : "ok";
+}
+
+function activityLabel(screen, idle) {
+  if (screen.exited) return "Exited";
+  if (screen.activity === "needsApproval") return "Needs approval";
+  if (screen.activity === "working") return "Working…";
+  return idle;
 }
 
 function tail(value, lines) {
@@ -578,8 +591,8 @@ function renderTerminalScreen(forceBottom = false) {
   if (pre.textContent !== screen.text) pre.textContent = screen.text;
   if (forceBottom || nearBottom) pre.scrollTop = pre.scrollHeight;
   const linked = state.lockedTool && slug(state.lockedTool) === screen.tool;
-  $("term-state").textContent = screen.exited ? "Exited" : linked ? "Talking" : "Running";
-  $("term-dot").className = `dot ${screen.exited ? "bad" : "ok"}`;
+  $("term-state").textContent = activityLabel(screen, linked ? "Talking" : "Running");
+  $("term-dot").className = `dot ${activityDot(screen)}`;
 }
 
 $("term-back").addEventListener("click", closeTerminal);

@@ -272,7 +272,11 @@ public struct RemoteState: Codable, Equatable, Sendable {
         public var tool: String
         public var text: String
         public var exited: Bool
-        public init(tool: String, text: String, exited: Bool) { self.tool = tool; self.text = text; self.exited = exited }
+        /// "working", "needsApproval", "idle" or "exited" (Phase 12.1).
+        public var activity: String
+        public init(tool: String, text: String, exited: Bool, activity: String = ToolActivity.idle.rawValue) {
+            self.tool = tool; self.text = text; self.exited = exited; self.activity = activity
+        }
     }
     public struct Item: Codable, Equatable, Sendable {
         public var command: String

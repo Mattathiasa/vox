@@ -14,23 +14,31 @@ public struct ToolConfig: Codable, Equatable, Sendable {
     public var defaultDirectory: String?
     /// Seconds to wait after launch before sending an initial prompt.
     public var startupDelaySeconds: Double
+    /// Screen text that means "asking for approval" (case-insensitive). nil = Claude Code/Codex/Gemini defaults.
+    public var approvalPatterns: [String]?
+    /// Screen text shown only while the tool is working. nil = defaults ("esc to interrupt", …).
+    public var busyPatterns: [String]?
 
     public init(
         name: String,
         aliases: [String] = [],
         command: String,
         defaultDirectory: String? = nil,
-        startupDelaySeconds: Double = 4
+        startupDelaySeconds: Double = 4,
+        approvalPatterns: [String]? = nil,
+        busyPatterns: [String]? = nil
     ) {
         self.name = name
         self.aliases = aliases
         self.command = command
         self.defaultDirectory = defaultDirectory
         self.startupDelaySeconds = startupDelaySeconds
+        self.approvalPatterns = approvalPatterns
+        self.busyPatterns = busyPatterns
     }
 
     enum CodingKeys: String, CodingKey {
-        case name, aliases, command, defaultDirectory, startupDelaySeconds
+        case name, aliases, command, defaultDirectory, startupDelaySeconds, approvalPatterns, busyPatterns
     }
 
     public init(from decoder: Decoder) throws {
@@ -40,6 +48,8 @@ public struct ToolConfig: Codable, Equatable, Sendable {
         command = try c.decode(String.self, forKey: .command)
         defaultDirectory = try c.decodeIfPresent(String.self, forKey: .defaultDirectory)
         startupDelaySeconds = try c.decodeIfPresent(Double.self, forKey: .startupDelaySeconds) ?? 4
+        approvalPatterns = try c.decodeIfPresent([String].self, forKey: .approvalPatterns)
+        busyPatterns = try c.decodeIfPresent([String].self, forKey: .busyPatterns)
     }
 
     /// Name plus aliases: every phrase that refers to this tool.
@@ -123,6 +133,8 @@ public struct VoxConfig: Codable, Equatable, Sendable {
     public var speakFeedback: Bool
     /// LLM fallback config (Phase 6). nil = no fallback; .disabled = explicit off.
     public var llm: LLMConfig?
+    /// Say when a tool needs approval, finishes, or exits (Phase 12.1).
+    public var attentionAlerts: Bool
 
     public init(
         tools: [ToolConfig],
@@ -135,7 +147,8 @@ public struct VoxConfig: Codable, Equatable, Sendable {
         shell: String = "/bin/zsh",
         wakeWord: WakeWordConfig = WakeWordConfig(),
         speakFeedback: Bool = true,
-        llm: LLMConfig? = nil
+        llm: LLMConfig? = nil,
+        attentionAlerts: Bool = true
     ) {
         self.tools = tools
         self.projects = projects
@@ -148,11 +161,12 @@ public struct VoxConfig: Codable, Equatable, Sendable {
         self.wakeWord = wakeWord
         self.speakFeedback = speakFeedback
         self.llm = llm
+        self.attentionAlerts = attentionAlerts
     }
 
     enum CodingKeys: String, CodingKey {
         case tools, projects, exitPhrases, commandPrefixes, confirmPatterns
-        case affirmativePhrases, tmuxPath, shell, wakeWord, speakFeedback, llm
+        case affirmativePhrases, tmuxPath, shell, wakeWord, speakFeedback, llm, attentionAlerts
     }
 
     public init(from decoder: Decoder) throws {
@@ -168,6 +182,7 @@ public struct VoxConfig: Codable, Equatable, Sendable {
         wakeWord = try c.decodeIfPresent(WakeWordConfig.self, forKey: .wakeWord) ?? WakeWordConfig()
         speakFeedback = try c.decodeIfPresent(Bool.self, forKey: .speakFeedback) ?? true
         llm = try c.decodeIfPresent(LLMConfig.self, forKey: .llm)
+        attentionAlerts = try c.decodeIfPresent(Bool.self, forKey: .attentionAlerts) ?? true
     }
 
     public func tool(named name: String) -> ToolConfig? {

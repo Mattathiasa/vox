@@ -105,6 +105,7 @@ h2 { font-size: 20px; font-weight: 700; letter-spacing: -.01em; margin: 0 0 10px
 .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--faint); flex: none; }
 .dot.ok { background: var(--green); box-shadow: 0 0 10px var(--green); }
 .dot.bad { background: var(--red); }
+.dot.warn { background: var(--orange); box-shadow: 0 0 10px var(--orange); }
 .dot.accent { background: var(--accent); }
 
 /* Hero: Siri-style orb */
