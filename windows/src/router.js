@@ -10,7 +10,8 @@ Media: play · pause · next song · volume up · mute · set volume to 30
 Ask: what time is it · what's the date · battery · what's 12 times 8 · read clipboard · what apps are open
 Do: set a timer for 5 minutes · remind me to … in 10 minutes · dark mode
 Tools: run claude · tell kilo to … · exit · interrupt · restart freebuff · what's running
-Tool keys: approve · always allow · deny · option 2 · press escape · shift tab · arrow down twice · press enter in claude`;
+Tool keys: approve · always allow · deny · option 2 · press escape · shift tab · arrow down twice · press enter in claude
+Read back: what did claude say · read the last answer · read claude`;
 
 export class SessionRouter {
   constructor(config) {
@@ -43,6 +44,8 @@ export class SessionRouter {
       // "press escape", "shift tab", "approve": keys for the tool, not text.
       const keys = this.parser.toolKeys(trimmed);
       if (keys) return [{ action: "keys", tool: keys.tool ?? tool, keys: keys.keys }];
+      const read = this.parser.readRequest(trimmed);
+      if (read) return [{ action: "read", tool: read.tool ?? tool }];
       const command = this.parser.strippingPrefix(trimmed);
       if (command !== null) {
         if (command === "") return [{ action: "feedback", message: "Listening for a command." }];
@@ -100,6 +103,11 @@ export class SessionRouter {
         const target = intent.tool ?? this.lockedTool;
         if (!target) return [{ action: "feedback", message: 'Not talking to any tool. Say "approve claude" or "press escape in claude".' }];
         return [{ action: "keys", tool: target, keys: intent.keys }];
+      }
+      case "readOutput": {
+        const target = intent.tool ?? this.lockedTool;
+        if (!target) return [{ action: "feedback", message: 'Not talking to any tool. Say "what did claude say".' }];
+        return [{ action: "read", tool: target }];
       }
       case "tell": return this.sendTo(intent.tool, intent.text);
       case "help": return [{ action: "feedback", message: HELP_TEXT, help: true }];

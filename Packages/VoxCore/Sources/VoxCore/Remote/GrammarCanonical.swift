@@ -16,6 +16,7 @@ public enum GrammarCanonical {
         case .listSessions: return "list"
         case let .interrupt(tool): return f(["interrupt", tool])
         case let .keys(tool, keys): return f(["keys", tool, keys.joined(separator: ",")])
+        case let .readOutput(tool): return f(["read", tool])
         case let .showTool(tool): return f(["show", tool])
         case let .askConfirmation(question): return f(["confirm", question])
         case let .feedback(message):

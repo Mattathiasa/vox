@@ -539,7 +539,7 @@ function speak(events) {
     if (event.kind === "success") continue;
     let line = event.message;
     if (event.kind === "confirm") line = `${line.replace(" Say yes to confirm.", "")} Yes or no?`;
-    else if (line.length > 120) line = "Done. The details are on screen.";
+    else if (line.length > 120 && event.readAloud !== "true") line = "Done. The details are on screen.";
     const utterance = new SpeechSynthesisUtterance(line);
     // Don't let hands-free hear Vox talking.
     pauseHandsFree();

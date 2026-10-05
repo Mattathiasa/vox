@@ -463,7 +463,8 @@ final class AppState: ObservableObject {
             llmConfig = config.llm
             engine = VoxEngine(config: config, tmux: tmux, apps: apps, desktop: desktop, ideBridge: HTTPIDEBridge(), llm: makeLLMAdapter(config: config))
             // Apple recommends keeping contextual strings to about 100.
-            var vocabulary = ["vox", "create a note", "search for", "press enter", "approve", "deny", "shift tab", "press escape"]
+            var vocabulary = ["vox", "create a note", "search for", "press enter", "approve", "deny", "shift tab", "press escape",
+                              "what did claude say", "read the last answer"]
             vocabulary += config.tools.flatMap(\.phrases) + config.projects.flatMap(\.phrases)
             vocabulary += apps.names
             var seen = Set<String>()
@@ -579,6 +580,8 @@ final class AppState: ObservableObject {
             if event.message == SessionRouter.helpText {
                 voiceOut.say("Here's what you can say. It's in the Vox panel.")
                 onWake?()
+            } else if event.readAloud {
+                voiceOut.say(event.message)
             } else if event.kind == .confirm {
                 voiceOut.say(event.message.replacingOccurrences(of: " Say yes to confirm.", with: "") + " Yes or no?")
             } else if event.message.count <= 120 {

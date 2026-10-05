@@ -129,6 +129,16 @@ const toolKeyMatcher = indexedMatcher(TOOL_KEYS);
 const keyPressVerbs = P(["press", "hit", "push", "tap", "send"]);
 const arrowVerbs = P(["go", "move"]);
 const ARROWS = { up: "Up", down: "Down", left: "Left", right: "Right" };
+// Phase 12.3 (ReadOutput.swift): "what did claude say".
+const readItPhrases = P(["what did it say", "what did it answer", "what does it say", "whats it saying", "what is it saying",
+  "read the output", "read the last answer", "read the answer", "read the response", "read the last response",
+  "read it back", "read that back", "read back", "read the last message", "read the reply", "read the last reply"]);
+const readQuestions = P(["what did", "what does", "whats", "what is"]);
+const readQuestionEndings = P(["say", "saying", "said", "answer", "reply", "write", "just say"]);
+const readFromPrefixes = P(["read the output of", "read the output from", "read the last answer from", "read the answer from",
+  "read the response from", "read the last response from", "read the last message from", "read back", "read"]);
+const readEndings = P(["output", "answer", "response", "reply", "back"]);
+
 const digit = (word) => (/^[1-9]$/.test(word) ? Number(word) : null);
 
 const isInt = (word) => /^[+-]?\d+$/.test(word);
@@ -153,6 +163,38 @@ export class CommandParser {
     let i = 0;
     while (i < tokens.length && FILLERS.has(tokens[i].norm)) i += 1;
     return this.parseToolKeys(tokens, i);
+  }
+
+  /** The whole utterance as a read-back request ({tool}, tool null = the current one) or null. */
+  readRequest(text) {
+    const tokens = tokenize(text);
+    let i = 0;
+    while (i < tokens.length && FILLERS.has(tokens[i].norm)) i += 1;
+    return this.parseReadRequest(tokens, i);
+  }
+
+  parseReadRequest(tokens, i) {
+    if (i >= tokens.length) return null;
+    if (readItPhrases.matchesWhole(tokens.slice(i))) return { tool: null };
+    const question = readQuestions.match(tokens, i);
+    if (question) {
+      const j = this.skipArticles(tokens, i + question.length);
+      const tool = this.tools.match(tokens, j);
+      const ending = tool ? readQuestionEndings.match(tokens, j + tool.length) : null;
+      if (tool && ending && j + tool.length + ending.length === tokens.length) return { tool: tool.value };
+    }
+    const prefix = readFromPrefixes.match(tokens, i);
+    if (prefix) {
+      const j = this.skipArticles(tokens, i + prefix.length);
+      const tool = this.tools.match(tokens, j);
+      if (tool) {
+        let end = j + tool.length;
+        const ending = readEndings.match(tokens, end);
+        if (ending) end += ending.length;
+        if (end === tokens.length) return { tool: tool.value };
+      }
+    }
+    return null;
   }
 
   parseToolKeys(tokens, i) {
@@ -430,6 +472,9 @@ export class CommandParser {
   parseToolControl(text, tokens, i) {
     const rest = tokens.slice(i);
     if (interruptPhrases.matchesWhole(rest)) return { type: "interrupt", tool: null };
+
+    const read = this.parseReadRequest(tokens, i);
+    if (read) return { type: "readOutput", tool: read.tool };
 
     // "approve", "option 2", "press escape in claude". A bare "press escape" stays a desktop key.
     const request = this.parseToolKeys(tokens, i);

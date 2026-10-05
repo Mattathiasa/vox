@@ -9,6 +9,7 @@ import { normalizedPhrase } from "./tokenizer.js";
 import { describeDuration, evaluateMath, formatNumber } from "./spoken.js";
 import { knownSite, urlFromSpoken, searchURL, siteURL, describeCombo } from "./keys.js";
 import { expandHome, phrasesOf } from "./config.js";
+import { lastAnswer } from "./reader.js";
 
 const ev = (kind, message) => ({ kind, message });
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -118,6 +119,13 @@ export class VoxEngine {
           }
         } catch (error) { return [ev("error", error.message)]; }
         return [ev("success", `Pressed ${describeKeys(a.keys)} in ${a.tool}.`)];
+      }
+      case "read": {
+        if (!this.terminals.has(a.tool)) return [ev("warning", `${a.tool} isn't running.`)];
+        const answer = lastAnswer(this.terminals.capture(a.tool, 120));
+        if (!answer) return [ev("info", `${a.tool} hasn't said anything yet.`)];
+        // readAloud: the phone/Vox window speaks all of it, not just short replies.
+        return [{ ...ev("info", `${a.tool} says: ${answer}`), readAloud: "true" }];
       }
       case "show":
         if (!this.terminals.has(a.tool)) return [ev("warning", `${a.tool} isn't running. Say "run ${a.tool}".`)];

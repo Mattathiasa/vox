@@ -1176,6 +1176,74 @@
      ]
     }
    ]
+  },
+  {
+   "steps": [
+    {
+     "say": "what did claude say",
+     "expect": [
+      "read|claude"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "read the last answer from claude code",
+     "expect": [
+      "read|claude"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "what did it say",
+     "expect": [
+      "feedback|Not talking to any tool. Say \"what did claude say\"."
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "run claude",
+     "expect": [
+      "launch|claude|~/Projects|"
+     ]
+    },
+    {
+     "say": "what did it say",
+     "expect": [
+      "read|claude"
+     ]
+    },
+    {
+     "say": "read the readme",
+     "expect": [
+      "send|claude|read the readme"
+     ]
+    },
+    {
+     "say": "read free buff",
+     "expect": [
+      "read|freebuff"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "read clipboard",
+     "expect": [
+      "desktop:answer|clipboard"
+     ]
+    }
+   ]
   }
  ]
 }

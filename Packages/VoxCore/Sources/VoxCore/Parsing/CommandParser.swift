@@ -29,6 +29,8 @@ public enum Intent: Equatable, Sendable {
     case tell(tool: String, text: String)
     /// "approve", "choose option 2", "press escape in claude": keys for a tool (nil = the current one)
     case toolKeys(tool: String?, keys: [String])
+    /// "what did claude say", "read the last answer": speak its latest answer (nil = the current tool)
+    case readOutput(tool: String?)
     /// A verb we understood, aimed at a tool that is not in the config.
     case unknownTool(spoken: String)
     /// "run freebuff in <something not in the config>"

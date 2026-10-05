@@ -8,10 +8,13 @@ public struct EngineEvent: Equatable, Sendable {
 
     public let kind: Kind
     public let message: String
+    /// Speak all of it, not just short messages (a tool's answer read back).
+    public let readAloud: Bool
 
-    public init(_ kind: Kind, _ message: String) {
+    public init(_ kind: Kind, _ message: String, readAloud: Bool = false) {
         self.kind = kind
         self.message = message
+        self.readAloud = readAloud
     }
 }
 
@@ -320,6 +323,15 @@ public actor VoxEngine {
             } catch {
                 return [EngineEvent(.error, String(describing: error))]
             }
+
+        case let .readOutput(toolName):
+            let session = SessionNaming.sessionName(forTool: toolName)
+            guard tmux.hasSession(session) else {
+                return [EngineEvent(.warning, "\(toolName) isn't running.")]
+            }
+            let answer = ScreenReader.lastAnswer(Self.tidy((try? tmux.capture(session: session, lines: 120)) ?? ""))
+            if answer.isEmpty { return [EngineEvent(.info, "\(toolName) hasn't said anything yet.")] }
+            return [EngineEvent(.info, "\(toolName) says: \(answer)", readAloud: true)]
 
         case let .showTool(toolName):
             let session = SessionNaming.sessionName(forTool: toolName)

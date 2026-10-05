@@ -353,7 +353,11 @@ public struct RemoteState: Codable, Equatable, Sendable {
 }
 
 public extension EngineEvent {
-    var remoteJSON: [String: String] { ["kind": kind.rawValue, "message": message] }
+    var remoteJSON: [String: String] {
+        var json = ["kind": kind.rawValue, "message": message]
+        if readAloud { json["readAloud"] = "true" }
+        return json
+    }
 }
 
 // MARK: - Assets

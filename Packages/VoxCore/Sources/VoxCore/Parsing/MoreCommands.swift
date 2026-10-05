@@ -107,6 +107,8 @@ extension CommandParser {
         let rest = Array(tokens[i...])
         if Self.interruptPhrases.matchesWhole(rest) { return .interrupt(tool: nil) }
 
+        if let read = parseReadRequest(tokens, from: i) { return .readOutput(tool: read.tool) }
+
         // "approve", "option 2", "press escape in claude". A bare "press escape" stays a desktop key.
         if let request = parseToolKeys(tokens, from: i), request.tool != nil || request.isAnswer {
             return .toolKeys(tool: request.tool, keys: request.keys)

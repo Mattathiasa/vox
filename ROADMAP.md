@@ -424,8 +424,11 @@ grammar plus a case in `shared/grammar-cases.json`.
       "approve" / "deny" while talking to a tool (and "press escape in claude" from anywhere). New `RouterAction.keys`.
       Done: `Parsing/ToolKeys.swift` + JS port; approve = 1, always allow = 2, deny = Esc (Claude Code/Codex/Gemini menus);
       "option 2"/"option to"; "twice"/"3 times". A bare "press escape" while idle still goes to the front app.
-- [ ] 12.3 **Read output back.** "what did claude say", "read the last answer", "read claude": speak the tail of the
+- [w] 12.3 **Read output back.** "what did claude say", "read the last answer", "read claude": speak the tail of the
       tool's screen (cleaned of box-drawing / UI chrome).
+      Done: `Engine/ScreenReader.swift` (last ⏺/✦/• answer, skips tool calls, ⎿ results, input box, status line; ≤700 chars,
+      cut at a sentence), `Parsing/ReadOutput.swift`, `EngineEvent.readAloud` (Mac + phone speak it in full); JS port in
+      `windows/src/reader.js`. **Owner:** ask "what did claude say" after a real answer and check what's read.
 - [ ] 12.4 **Several sessions per tool.** "run claude in chirp" while claude runs in vox starts a second session
       (`claude-chirp`) instead of silently focusing the vox one; "switch to claude in chirp", kill/tell by project.
 - [ ] 12.5 Draft mode for prompts: "scratch that", "add …", "send it" before text reaches an agent
@@ -469,6 +472,11 @@ Newest first. One entry per work session: date, who, what changed, **how it was 
   key with `send-keys` (digits 1–9 added to `allowedKeys`), help text, recognizer hints; same grammar in `windows/src` (+ `KEY_SEQUENCES`
   digits). Verified: `scripts/test.sh` OK (204 tests, 7 new in `ToolKeysTests`), 8 new shared parity cases pass in Swift and Node
   (`npm test` 18/18), and real tmux on a scratch socket delivered `1`, `2`, Esc, Shift-Tab (`^[[Z`) and Down (`^[[B`) to `cat -v`.
+- **12.3 read back:** "what did claude say" / "read the last answer" / "read claude" → `RouterAction.readOutput` → engine captures 120
+  lines and `ScreenReader.lastAnswer` picks the last answer; while talking to a tool these phrases are not sent to it as prompts.
+  `EngineEvent.readAloud` (+ `readAloud: "true"` in phone events) lifts the 120-character speech limit. Verified: `scripts/test.sh`
+  OK (210 tests, 6 new in `ReadOutputTests`), 5 shared parity cases, `npm test` 19/19 (new `reader.test.js` with the same fixtures).
+  Fixtures are hand-trimmed Claude/Gemini/Codex screens, not a live capture.
 
 ### 2026-09-24 · Phase 11 W0: Windows baseline verified on the owner's PC + spikes (on Windows)
 
