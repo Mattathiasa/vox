@@ -12,6 +12,7 @@ export function canonicalAction(a) {
     case "kill": return f("kill", a.tool);
     case "list": return "list";
     case "interrupt": return f("interrupt", a.tool);
+    case "keys": return f("keys", a.tool, a.keys.join(","));
     case "show": return f("show", a.tool);
     case "confirm": return f("confirm", a.question);
     case "feedback": return a.help ? "feedback|<help>" : f("feedback", a.message);

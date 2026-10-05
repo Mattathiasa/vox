@@ -147,7 +147,9 @@ public struct TmuxAdapter: Sendable {
     public static let allowedKeys: Set<String> = [
         "Enter", "Escape", "Up", "Down", "Left", "Right", "Tab", "BTab", "C-c", "C-d", "C-l",
         // Live typing (phone remote / Mac tiles): Backspace, forward delete, Home/End, PgUp/PgDn
-        "BSpace", "DC", "Home", "End", "PPage", "NPage"
+        "BSpace", "DC", "Home", "End", "PPage", "NPage",
+        // Menu choices in coding agents ("approve" = 1, "option 2")
+        "1", "2", "3", "4", "5", "6", "7", "8", "9"
     ]
 
     public func sendKey(session: String, key: String) throws {

@@ -10,6 +10,8 @@ export const KEY_SEQUENCES = {
   Enter: "\r", Escape: "\x1b", Up: "\x1b[A", Down: "\x1b[B", Right: "\x1b[C", Left: "\x1b[D",
   Tab: "\t", BTab: "\x1b[Z", "C-c": "\x03", "C-d": "\x04", "C-l": "\x0c",
   BSpace: "\x7f", DC: "\x1b[3~", Home: "\x1b[H", End: "\x1b[F", PPage: "\x1b[5~", NPage: "\x1b[6~",
+  // Menu choices in coding agents ("approve" = 1, "option 2")
+  1: "1", 2: "2", 3: "3", 4: "4", 5: "5", 6: "6", 7: "7", 8: "8", 9: "9",
 };
 
 /** "Free Buff!" -> "free-buff" (same as SessionNaming minus the "vox-" prefix). */

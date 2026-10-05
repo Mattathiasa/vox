@@ -27,6 +27,8 @@ public enum Intent: Equatable, Sendable {
     case showTool(String)
     /// "tell claude to fix the login bug": text for a running tool, without switching to it
     case tell(tool: String, text: String)
+    /// "approve", "choose option 2", "press escape in claude": keys for a tool (nil = the current one)
+    case toolKeys(tool: String?, keys: [String])
     /// A verb we understood, aimed at a tool that is not in the config.
     case unknownTool(spoken: String)
     /// "run freebuff in <something not in the config>"

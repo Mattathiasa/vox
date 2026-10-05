@@ -463,7 +463,7 @@ final class AppState: ObservableObject {
             llmConfig = config.llm
             engine = VoxEngine(config: config, tmux: tmux, apps: apps, desktop: desktop, ideBridge: HTTPIDEBridge(), llm: makeLLMAdapter(config: config))
             // Apple recommends keeping contextual strings to about 100.
-            var vocabulary = ["vox", "create a note", "search for", "press enter"]
+            var vocabulary = ["vox", "create a note", "search for", "press enter", "approve", "deny", "shift tab", "press escape"]
             vocabulary += config.tools.flatMap(\.phrases) + config.projects.flatMap(\.phrases)
             vocabulary += apps.names
             var seen = Set<String>()

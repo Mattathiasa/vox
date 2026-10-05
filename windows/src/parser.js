@@ -103,6 +103,34 @@ const NUMBER_WORDS = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven
 const closeTerminalPhrases = P(["close the terminals", "close all terminals", "close all the terminals", "close terminals",
   "kill the terminals", "kill all terminals", "kill all the terminals", "close the vox terminals", "close all vox terminals"]);
 
+// Phase 12.2 (ToolKeys.swift): keys for a running tool by voice.
+const ANSWERS = [
+  { phrases: ["approve", "approve it", "approve that", "accept", "accept it", "allow", "allow it", "allow once", "yes approve", "approve once"], keys: ["1"] },
+  { phrases: ["always allow", "allow always", "approve always", "always approve", "dont ask again", "yes dont ask again", "yes and dont ask again"], keys: ["2"] },
+  { phrases: ["deny", "deny it", "deny that", "reject", "reject it", "decline", "dont allow", "dont allow it"], keys: ["Escape"] },
+];
+const answerMatcher = indexedMatcher(ANSWERS);
+const optionWords = P(["choose option", "select option", "pick option", "choose number", "select number", "pick number", "choose", "select", "pick", "option", "number"]);
+const OPTION_NUMBERS = { one: 1, won: 1, two: 2, to: 2, too: 2, three: 3, four: 4, for: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9 };
+const TOOL_KEYS = [
+  { phrases: ["escape", "esc", "the escape key", "escape key"], key: "Escape" },
+  { phrases: ["enter", "return", "the enter key", "enter key", "the return key", "return key"], key: "Enter" },
+  { phrases: ["shift tab", "back tab", "shift plus tab"], key: "BTab" },
+  { phrases: ["tab", "the tab key", "tab key"], key: "Tab" },
+  { phrases: ["arrow up", "up arrow", "the up arrow", "up key"], key: "Up" },
+  { phrases: ["arrow down", "down arrow", "the down arrow", "down key"], key: "Down" },
+  { phrases: ["arrow left", "left arrow", "the left arrow", "left key"], key: "Left" },
+  { phrases: ["arrow right", "right arrow", "the right arrow", "right key"], key: "Right" },
+  { phrases: ["backspace", "back space"], key: "BSpace" },
+  { phrases: ["page up"], key: "PPage" },
+  { phrases: ["page down"], key: "NPage" },
+];
+const toolKeyMatcher = indexedMatcher(TOOL_KEYS);
+const keyPressVerbs = P(["press", "hit", "push", "tap", "send"]);
+const arrowVerbs = P(["go", "move"]);
+const ARROWS = { up: "Up", down: "Down", left: "Left", right: "Right" };
+const digit = (word) => (/^[1-9]$/.test(word) ? Number(word) : null);
+
 const isInt = (word) => /^[+-]?\d+$/.test(word);
 const toInt = (word) => (isInt(word) ? Number(word) : null);
 
@@ -118,6 +146,77 @@ export class CommandParser {
   isExit(text) { const t = tokenize(text); return t.length > 0 && this.exitPhrases.matchesWhole(t); }
   isAffirmative(text) { const t = tokenize(text); return t.length > 0 && this.affirmatives.matchesWhole(t); }
   isInterrupt(text) { const t = tokenize(text); return t.length > 0 && interruptPhrases.matchesWhole(t); }
+
+  /** The whole utterance as keys for a tool ({keys, tool, isAnswer}) or null. */
+  toolKeys(text) {
+    const tokens = tokenize(text);
+    let i = 0;
+    while (i < tokens.length && FILLERS.has(tokens[i].norm)) i += 1;
+    return this.parseToolKeys(tokens, i);
+  }
+
+  parseToolKeys(tokens, i) {
+    if (i >= tokens.length) return null;
+    let j = i;
+    let keys;
+    let isAnswer = false;
+    const answer = answerMatcher.match(tokens, j);
+    const option = answer ? null : optionWords.match(tokens, j);
+    const optionN = option && j + option.length < tokens.length
+      ? (digit(tokens[j + option.length].norm) ?? OPTION_NUMBERS[tokens[j + option.length].norm] ?? null) : null;
+    if (answer) {
+      keys = [...ANSWERS[Number(answer.value)].keys];
+      j += answer.length;
+      isAnswer = true;
+    } else if (optionN !== null) {
+      keys = [String(optionN)];
+      j += option.length + 1;
+      isAnswer = true;
+    } else {
+      const pressed = keyPressVerbs.match(tokens, j);
+      if (pressed) j += pressed.length;
+      const name = toolKeyMatcher.match(tokens, j);
+      const verb = pressed ? null : arrowVerbs.match(tokens, j);
+      if (name) {
+        keys = [TOOL_KEYS[Number(name.value)].key];
+        j += name.length;
+      } else if (verb && j + verb.length < tokens.length && ARROWS[tokens[j + verb.length].norm]) {
+        keys = [ARROWS[tokens[j + verb.length].norm]];
+        j += verb.length + 1;
+      } else if (pressed && j < tokens.length && ARROWS[tokens[j].norm]) {
+        keys = [ARROWS[tokens[j].norm]];
+        j += 1;
+      } else if (pressed && j < tokens.length && digit(tokens[j].norm) !== null) {
+        keys = [tokens[j].norm];
+        j += 1;
+      } else {
+        return null;
+      }
+      if (j < tokens.length && tokens[j].norm === "twice") {
+        keys = [...keys, ...keys];
+        j += 1;
+      } else if (j + 1 < tokens.length && tokens[j + 1].norm === "times") {
+        const n = toInt(tokens[j].norm) ?? NUMBER_WORDS[tokens[j].norm] ?? null;
+        if (n !== null && n >= 1 && n <= 9) {
+          keys = Array(n).fill(keys[0]);
+          j += 2;
+        }
+      }
+    }
+    let tool = null;
+    if (j < tokens.length) {
+      let k = j;
+      const loc = locationWords.match(tokens, k);
+      if (loc) k += loc.length;
+      else if (tokens[k].norm === "to") k += 1;
+      else if (!isAnswer) return null;
+      k = this.skipArticles(tokens, k);
+      const match = this.tools.match(tokens, k);
+      if (!match || k + match.length !== tokens.length) return null;
+      tool = match.value;
+    }
+    return { keys, tool, isAnswer };
+  }
 
   /** Text after a leading command prefix ("vox …"); "" when the prefix is all there is; null without one. */
   strippingPrefix(text) {
@@ -331,6 +430,10 @@ export class CommandParser {
   parseToolControl(text, tokens, i) {
     const rest = tokens.slice(i);
     if (interruptPhrases.matchesWhole(rest)) return { type: "interrupt", tool: null };
+
+    // "approve", "option 2", "press escape in claude". A bare "press escape" stays a desktop key.
+    const request = this.parseToolKeys(tokens, i);
+    if (request && (request.tool || request.isAnswer)) return { type: "toolKeys", tool: request.tool, keys: request.keys };
 
     const tell = tellToolVerbs.match(tokens, i);
     if (tell) {

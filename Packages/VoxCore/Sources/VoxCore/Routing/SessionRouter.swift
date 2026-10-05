@@ -23,6 +23,8 @@ public enum RouterAction: Equatable, Sendable {
     case listSessions
     /// Ctrl-C to a tool's session.
     case interrupt(tool: String)
+    /// Keys for a tool's session (tmux key names): "approve" = 1, "deny" = Escape, "arrow down twice".
+    case keys(tool: String, keys: [String])
     /// Open Terminal attached to a tool's session.
     case showTool(String)
     /// A GUI action (open app, note, web, type, key). Doesn't change the mode.
@@ -97,6 +99,10 @@ public struct SessionRouter: Sendable {
             }
             if parser.isInterrupt(trimmed) {
                 return [.interrupt(tool: tool)]
+            }
+            // "press escape", "shift tab", "approve": keys for the tool, not text.
+            if let request = parser.toolKeys(trimmed) {
+                return [.keys(tool: request.tool ?? tool, keys: request.keys)]
             }
             if let command = parser.strippingPrefix(trimmed) {
                 if command.isEmpty { return [.feedback("Listening for a command.")] }
@@ -176,6 +182,12 @@ public struct SessionRouter: Sendable {
         case let .showTool(tool):
             return [.showTool(tool)]
 
+        case let .toolKeys(tool, keys):
+            guard let target = tool ?? mode.lockedTool else {
+                return [.feedback("Not talking to any tool. Say \"approve claude\" or \"press escape in claude\".")]
+            }
+            return [.keys(tool: target, keys: keys)]
+
         case let .tell(tool, message):
             return sendTo(tool: tool, text: message)
 
@@ -216,6 +228,7 @@ public struct SessionRouter: Sendable {
     Ask: what time is it · what's the date · battery · what's 12 times 8 · read clipboard · what apps are open
     Do: create a note called … · remind me to … in 10 minutes · set a timer for 5 minutes · dark mode
     Tools: run freebuff in vox · tell claude to … · exit · interrupt · restart freebuff · show freebuff · what's running
+    Tool keys: approve · always allow · deny · option 2 · press escape · shift tab · arrow down twice · press enter in claude
     IDE: open antigravity with 3 terminals · run claude in the first · in terminal 2 run npm run dev · close the terminals
     """
 

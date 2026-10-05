@@ -1030,6 +1030,152 @@
      ]
     }
    ]
+  },
+  {
+   "steps": [
+    {
+     "say": "run claude",
+     "expect": [
+      "launch|claude|~/Projects|"
+     ]
+    },
+    {
+     "say": "press escape",
+     "expect": [
+      "keys|claude|Escape"
+     ]
+    },
+    {
+     "say": "approve",
+     "expect": [
+      "keys|claude|1"
+     ]
+    },
+    {
+     "say": "deny",
+     "expect": [
+      "keys|claude|Escape"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "run claude",
+     "expect": [
+      "launch|claude|~/Projects|"
+     ]
+    },
+    {
+     "say": "shift tab",
+     "expect": [
+      "keys|claude|BTab"
+     ]
+    },
+    {
+     "say": "arrow down twice",
+     "expect": [
+      "keys|claude|Down,Down"
+     ]
+    },
+    {
+     "say": "choose option 2",
+     "expect": [
+      "keys|claude|2"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "run claude",
+     "expect": [
+      "launch|claude|~/Projects|"
+     ]
+    },
+    {
+     "say": "yes, don't ask again",
+     "expect": [
+      "keys|claude|2"
+     ]
+    },
+    {
+     "say": "option to",
+     "expect": [
+      "keys|claude|2"
+     ]
+    },
+    {
+     "say": "go up 3 times",
+     "expect": [
+      "keys|claude|Up,Up,Up"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "run claude",
+     "expect": [
+      "launch|claude|~/Projects|"
+     ]
+    },
+    {
+     "say": "allow it to use npm",
+     "expect": [
+      "send|claude|allow it to use npm"
+     ]
+    },
+    {
+     "say": "deny in free buff",
+     "expect": [
+      "keys|freebuff|Escape"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "approve claude",
+     "expect": [
+      "keys|claude|1"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "press escape in claude",
+     "expect": [
+      "keys|claude|Escape"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "press enter",
+     "expect": [
+      "desktop:pressKey|return"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "approve",
+     "expect": [
+      "feedback|Not talking to any tool. Say \"approve claude\" or \"press escape in claude\"."
+     ]
+    }
+   ]
   }
  ]
 }

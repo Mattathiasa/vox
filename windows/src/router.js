@@ -9,7 +9,8 @@ Type: type … and press enter · press control s
 Media: play · pause · next song · volume up · mute · set volume to 30
 Ask: what time is it · what's the date · battery · what's 12 times 8 · read clipboard · what apps are open
 Do: set a timer for 5 minutes · remind me to … in 10 minutes · dark mode
-Tools: run claude · tell kilo to … · exit · interrupt · restart freebuff · what's running`;
+Tools: run claude · tell kilo to … · exit · interrupt · restart freebuff · what's running
+Tool keys: approve · always allow · deny · option 2 · press escape · shift tab · arrow down twice · press enter in claude`;
 
 export class SessionRouter {
   constructor(config) {
@@ -39,6 +40,9 @@ export class SessionRouter {
         return [{ action: "feedback", message: `Stopped talking to ${tool}. ${tool} is still running.` }];
       }
       if (this.parser.isInterrupt(trimmed)) return [{ action: "interrupt", tool }];
+      // "press escape", "shift tab", "approve": keys for the tool, not text.
+      const keys = this.parser.toolKeys(trimmed);
+      if (keys) return [{ action: "keys", tool: keys.tool ?? tool, keys: keys.keys }];
       const command = this.parser.strippingPrefix(trimmed);
       if (command !== null) {
         if (command === "") return [{ action: "feedback", message: "Listening for a command." }];
@@ -92,6 +96,11 @@ export class SessionRouter {
           `Restart ${tool.name}? Whatever it's doing will stop.`);
       }
       case "show": return [{ action: "show", tool: intent.tool }];
+      case "toolKeys": {
+        const target = intent.tool ?? this.lockedTool;
+        if (!target) return [{ action: "feedback", message: 'Not talking to any tool. Say "approve claude" or "press escape in claude".' }];
+        return [{ action: "keys", tool: target, keys: intent.keys }];
+      }
       case "tell": return this.sendTo(intent.tool, intent.text);
       case "help": return [{ action: "feedback", message: HELP_TEXT, help: true }];
       case "exit":

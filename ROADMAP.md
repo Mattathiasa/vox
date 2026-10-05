@@ -420,8 +420,10 @@ grammar plus a case in `shared/grammar-cases.json`.
       Done: `Engine/ToolAttention.swift` (ActivityDetector + AttentionTracker), `VoxEngine.checkAttention()`, AppState watcher every 1.5 s
       (log 🔔 + speech + notification; approval also shows the HUD), HUD tiles and phone show "Needs approval"/"Working…".
       Core tested (8 tests); **owner:** hear "claude needs your approval" on a real prompt, allow the notification once.
-- [ ] 12.2 **Keys to a tool by voice.** "press escape", "shift tab", "arrow down", "press enter", "choose option 2",
-      "approve" / "deny" while talking to a tool (and "press escape in claude" from anywhere). New `RouterAction.key`.
+- [x] 12.2 **Keys to a tool by voice.** "press escape", "shift tab", "arrow down", "press enter", "choose option 2",
+      "approve" / "deny" while talking to a tool (and "press escape in claude" from anywhere). New `RouterAction.keys`.
+      Done: `Parsing/ToolKeys.swift` + JS port; approve = 1, always allow = 2, deny = Esc (Claude Code/Codex/Gemini menus);
+      "option 2"/"option to"; "twice"/"3 times". A bare "press escape" while idle still goes to the front app.
 - [ ] 12.3 **Read output back.** "what did claude say", "read the last answer", "read claude": speak the tail of the
       tool's screen (cleaned of box-drawing / UI chrome).
 - [ ] 12.4 **Several sessions per tool.** "run claude in chirp" while claude runs in vox starts a second session
@@ -463,6 +465,10 @@ Newest first. One entry per work session: date, who, what changed, **how it was 
   the HUD hidden and speaks + notifies + logs. Verified: `scripts/test.sh` OK (197 tests, 8 new in `AttentionTests`, real Claude
   screens as fixtures), app builds with no new warnings, `npm test` 18/18 (embedded web copy regenerated). Not verified: hearing it
   on a real approval prompt, the notification permission prompt.
+- **12.2 keys by voice:** `ToolKeys.swift` (`toolKeys`/`parseToolKeys`), `Intent.toolKeys`, `RouterAction.keys`, engine sends each
+  key with `send-keys` (digits 1–9 added to `allowedKeys`), help text, recognizer hints; same grammar in `windows/src` (+ `KEY_SEQUENCES`
+  digits). Verified: `scripts/test.sh` OK (204 tests, 7 new in `ToolKeysTests`), 8 new shared parity cases pass in Swift and Node
+  (`npm test` 18/18), and real tmux on a scratch socket delivered `1`, `2`, Esc, Shift-Tab (`^[[Z`) and Down (`^[[B`) to `cat -v`.
 
 ### 2026-09-24 · Phase 11 W0: Windows baseline verified on the owner's PC + spikes (on Windows)
 

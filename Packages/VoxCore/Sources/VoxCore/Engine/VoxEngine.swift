@@ -241,6 +241,16 @@ public actor VoxEngine {
         return lines.joined(separator: "\n")
     }
 
+    /// ["Down", "Down"] -> "Down ×2"; tmux names -> what's on the keycap.
+    static func describe(_ keys: [String]) -> String {
+        let names = ["BTab": "Shift-Tab", "BSpace": "Backspace", "PPage": "Page Up", "NPage": "Page Down"]
+        let named = keys.map { names[$0] ?? $0 }
+        if let first = named.first, named.count > 1, named.allSatisfy({ $0 == first }) {
+            return "\(first) ×\(named.count)"
+        }
+        return named.joined(separator: " ")
+    }
+
     public func exitPassThrough() {
         router.unlock()
     }
@@ -292,6 +302,21 @@ public actor VoxEngine {
             do {
                 try tmux.interrupt(session: session)
                 return [EngineEvent(.success, "Interrupted \(toolName).")]
+            } catch {
+                return [EngineEvent(.error, String(describing: error))]
+            }
+
+        case let .keys(toolName, keys):
+            let session = SessionNaming.sessionName(forTool: toolName)
+            guard tmux.hasSession(session) else {
+                return [EngineEvent(.warning, "\(toolName) isn't running.")]
+            }
+            do {
+                for (n, key) in keys.enumerated() {
+                    if n > 0 { await pause(0.05) }
+                    try tmux.sendKey(session: session, key: key)
+                }
+                return [EngineEvent(.success, "Pressed \(Self.describe(keys)) in \(toolName).")]
             } catch {
                 return [EngineEvent(.error, String(describing: error))]
             }

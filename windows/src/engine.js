@@ -13,6 +13,14 @@ import { expandHome, phrasesOf } from "./config.js";
 const ev = (kind, message) => ({ kind, message });
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/** ["Down", "Down"] -> "Down ×2" (same as VoxEngine.describe). */
+export function describeKeys(keys) {
+  const names = { BTab: "Shift-Tab", BSpace: "Backspace", PPage: "Page Up", NPage: "Page Down" };
+  const named = keys.map((k) => names[k] ?? k);
+  if (named.length > 1 && named.every((k) => k === named[0])) return `${named[0]} ×${named.length}`;
+  return named.join(" ");
+}
+
 export class VoxEngine {
   /**
    * @param {object} deps
@@ -101,6 +109,16 @@ export class VoxEngine {
         if (!this.terminals.has(a.tool)) return [ev("info", `${a.tool} isn't running.`)];
         this.terminals.interrupt(a.tool);
         return [ev("success", `Interrupted ${a.tool}.`)];
+      case "keys": {
+        if (!this.terminals.has(a.tool)) return [ev("warning", `${a.tool} isn't running.`)];
+        try {
+          for (const [n, key] of a.keys.entries()) {
+            if (n > 0) await this.pause(50);
+            this.terminals.sendKey(a.tool, key);
+          }
+        } catch (error) { return [ev("error", error.message)]; }
+        return [ev("success", `Pressed ${describeKeys(a.keys)} in ${a.tool}.`)];
+      }
       case "show":
         if (!this.terminals.has(a.tool)) return [ev("warning", `${a.tool} isn't running. Say "run ${a.tool}".`)];
         return [ev("info", `${a.tool}'s screen is in the Vox window. Tap it to type into it.`)];
