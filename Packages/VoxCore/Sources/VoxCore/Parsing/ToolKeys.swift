@@ -118,7 +118,7 @@ extension CommandParser {
             else if tokens[k].norm == "to" { k += 1 }
             else if !isAnswer { return nil }
             k = skipArticles(tokens, from: k)
-            guard let match = tools.match(tokens, at: k), k + match.length == tokens.count else { return nil }
+            guard let match = matchInstance(tokens, at: k), k + match.length == tokens.count else { return nil }
             tool = match.value
             j = tokens.count
         }

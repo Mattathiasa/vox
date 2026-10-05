@@ -197,6 +197,7 @@ and the exact router output in a one-line canonical form (`GrammarCanonical.swif
 | D16 | Phone remote = web app + polling JSON API, not a native iOS/Android app | One codebase for iPhone, Android and the Windows window; no App Store; Add to Home Screen gives an icon | Need background push or wake word on the phone → native app |
 | D17 | Tailscale Serve for remote access, loopback bind by default | Real HTTPS (mic on iPhone) and no open port on the Wi-Fi; nothing to host | Owner can't use Tailscale → self-signed cert + trust profile |
 | D18 | Windows agent in Node.js with a ported grammar, guarded by shared test cases | Testable in the cloud; mature ConPTY (node-pty) and VT emulation (@xterm/headless); Swift on Windows lacks both | Drift keeps happening → compile VoxCore's parser to WASM and share it |
+| D19 | A tool launched in a project is its own session, `claude@chirp` → tmux `vox-claude--chirp` (Phase 12.4) | Two agents in two repos at once; `run claude in chirp` used to silently focus the claude already running elsewhere. A bare name means the default session, else the only one, else Vox asks | Owner wants one claude that moves between repos → `cd` it instead |
 | D9 | No sandbox, not on the Mac App Store | Needs tmux, Apple Events to arbitrary apps, and Accessibility | — |
 
 ## Adding an adapter (Phase 4+ pattern)

@@ -116,8 +116,22 @@ public struct AttentionTracker: Sendable {
     public func activity(of tool: String) -> ToolActivity? { last[tool] }
 }
 
-/// A running tool instance: "claude", or "claude@chirp" for a second session in a project (Phase 12.4).
+/// A running tool instance: "claude", or "claude@chirp" for a session started in a project (Phase 12.4).
 public enum InstanceName {
+    /// "claude@chirp" -> "claude".
+    public static func tool(_ instance: String) -> String {
+        instance.firstIndex(of: "@").map { String(instance[..<$0]) } ?? instance
+    }
+
+    /// "claude@chirp" -> "chirp"; nil for the default session.
+    public static func project(_ instance: String) -> String? {
+        instance.firstIndex(of: "@").map { String(instance[instance.index(after: $0)...]) }
+    }
+
+    public static func make(tool: String, project: String?) -> String {
+        project.map { "\(tool)@\($0)" } ?? tool
+    }
+
     /// "claude@chirp" -> "claude in chirp" (for speech and messages).
     public static func spoken(_ instance: String) -> String {
         guard let at = instance.firstIndex(of: "@") else { return instance }

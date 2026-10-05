@@ -4,7 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { SessionRouter, HELP_TEXT } from "./router.js";
-import { slug } from "./terminal.js";
+import { slug, spokenName } from "./terminal.js";
 import { normalizedPhrase } from "./tokenizer.js";
 import { describeDuration, evaluateMath, formatNumber } from "./spoken.js";
 import { knownSite, urlFromSpoken, searchURL, siteURL, describeCombo } from "./keys.js";
@@ -51,14 +51,33 @@ export class VoxEngine {
 
   /** A terminal key button (Enter, Esc, arrows, Ctrl-C…). */
   press(key, tool) {
-    if (!this.terminals.has(tool)) return [ev("warning", `${tool} isn't running.`)];
-    try { this.terminals.sendKey(tool, key); return []; } catch (error) { return [ev("error", error.message)]; }
+    const t = this.target(tool, ev("warning", `${tool} isn't running.`));
+    if (t.event) return [t.event];
+    try { this.terminals.sendKey(t.instance, key); return []; } catch (error) { return [ev("error", error.message)]; }
   }
 
   /** Live typing from the phone/Vox window: literal keystrokes, no Enter. */
   type(text, tool) {
-    if (!this.terminals.has(tool)) return [ev("warning", `${tool} isn't running.`)];
-    try { this.terminals.type(tool, text); return []; } catch (error) { return [ev("error", error.message)]; }
+    const t = this.target(tool, ev("warning", `${tool} isn't running.`));
+    if (t.event) return [t.event];
+    try { this.terminals.type(t.instance, text); return []; } catch (error) { return [ev("error", error.message)]; }
+  }
+
+  /**
+   * The running session a name means (12.4, same as VoxEngine.target): "claude" is the default session;
+   * when only "claude@chirp" runs, "claude" means that one; with several, ask instead of guessing.
+   * @returns {{instance: string} | {event: object}}
+   */
+  target(name, missing) {
+    if (this.terminals.has(name)) return { instance: name };
+    if (name.includes("@")) return { event: missing };
+    const base = slug(name);
+    const others = this.terminals.list().filter((n) => slug(n.split("@")[0]) === base && n.includes("@")).sort();
+    if (others.length === 0) return { event: missing };
+    if (others.length === 1) return { instance: others[0] };
+    const projects = others.map((n) => n.split("@")[1]);
+    const list = `${projects.slice(0, -1).join(", ")} and ${projects[projects.length - 1]}`;
+    return { event: ev("info", `${name} is running in ${list}. Say "${name} in ${projects[0]}" to pick one.`) };
   }
 
   screens(lines = 150) {
@@ -91,45 +110,55 @@ export class VoxEngine {
   async execute(a) {
     switch (a.action) {
       case "launch": return this.launch(a.tool, a.directory, a.prompt);
-      case "focus":
-        if (!this.terminals.has(a.tool)) {
-          this.router.unlock();
-          return [ev("warning", `${a.tool} isn't running. Say "run ${a.tool}".`)];
-        }
-        return [ev("success", `Talking to ${a.tool}. Say "exit" to stop.`)];
+      case "focus": {
+        const t = this.target(a.tool, ev("warning", `${spokenName(a.tool)} isn't running. Say "run ${spokenName(a.tool)}".`));
+        if (t.event) { this.router.unlock(); return [t.event]; }
+        if (t.instance !== a.tool) this.router.lockedTool = t.instance;
+        return [ev("success", `Talking to ${spokenName(t.instance)}. Say "exit" to stop.`)];
+      }
       case "send": return this.sendToTool(a.text, a.tool);
-      case "kill":
-        if (!this.terminals.has(a.tool)) return [ev("info", `${a.tool} wasn't running.`)];
-        this.terminals.kill(a.tool);
-        return [ev("success", `Killed ${a.tool}.`)];
+      case "kill": {
+        const t = this.target(a.tool, ev("info", `${spokenName(a.tool)} wasn't running.`));
+        if (t.event) return [t.event];
+        this.terminals.kill(t.instance);
+        if (this.router.lockedTool === t.instance) this.router.unlock();
+        return [ev("success", `Killed ${spokenName(t.instance)}.`)];
+      }
       case "list": {
-        const names = this.terminals.list();
+        const names = this.terminals.list().map(spokenName);
         return [ev("info", names.length ? `Running: ${names.join(", ")}` : "No tools running.")];
       }
-      case "interrupt":
-        if (!this.terminals.has(a.tool)) return [ev("info", `${a.tool} isn't running.`)];
-        this.terminals.interrupt(a.tool);
-        return [ev("success", `Interrupted ${a.tool}.`)];
+      case "interrupt": {
+        const t = this.target(a.tool, ev("info", `${spokenName(a.tool)} isn't running.`));
+        if (t.event) return [t.event];
+        this.terminals.interrupt(t.instance);
+        return [ev("success", `Interrupted ${spokenName(t.instance)}.`)];
+      }
       case "keys": {
-        if (!this.terminals.has(a.tool)) return [ev("warning", `${a.tool} isn't running.`)];
+        const t = this.target(a.tool, ev("warning", `${spokenName(a.tool)} isn't running.`));
+        if (t.event) return [t.event];
         try {
           for (const [n, key] of a.keys.entries()) {
             if (n > 0) await this.pause(50);
-            this.terminals.sendKey(a.tool, key);
+            this.terminals.sendKey(t.instance, key);
           }
         } catch (error) { return [ev("error", error.message)]; }
-        return [ev("success", `Pressed ${describeKeys(a.keys)} in ${a.tool}.`)];
+        return [ev("success", `Pressed ${describeKeys(a.keys)} in ${spokenName(t.instance)}.`)];
       }
       case "read": {
-        if (!this.terminals.has(a.tool)) return [ev("warning", `${a.tool} isn't running.`)];
-        const answer = lastAnswer(this.terminals.capture(a.tool, 120));
-        if (!answer) return [ev("info", `${a.tool} hasn't said anything yet.`)];
+        const t = this.target(a.tool, ev("warning", `${spokenName(a.tool)} isn't running.`));
+        if (t.event) return [t.event];
+        const name = spokenName(t.instance);
+        const answer = lastAnswer(this.terminals.capture(t.instance, 120));
+        if (!answer) return [ev("info", `${name} hasn't said anything yet.`)];
         // readAloud: the phone/Vox window speaks all of it, not just short replies.
-        return [{ ...ev("info", `${a.tool} says: ${answer}`), readAloud: "true" }];
+        return [{ ...ev("info", `${name} says: ${answer}`), readAloud: "true" }];
       }
-      case "show":
-        if (!this.terminals.has(a.tool)) return [ev("warning", `${a.tool} isn't running. Say "run ${a.tool}".`)];
-        return [ev("info", `${a.tool}'s screen is in the Vox window. Tap it to type into it.`)];
+      case "show": {
+        const t = this.target(a.tool, ev("warning", `${spokenName(a.tool)} isn't running. Say "run ${spokenName(a.tool)}".`));
+        if (t.event) return [t.event];
+        return [ev("info", `${spokenName(t.instance)}'s screen is in the Vox window. Tap it to type into it.`)];
+      }
       case "confirm": return [ev("confirm", a.question)];
       case "feedback": return [ev("info", a.message)];
       case "llm": return [ev("info", `Didn't catch a command in "${a.text}".`)];
@@ -139,20 +168,21 @@ export class VoxEngine {
   }
 
   async launch(toolName, directory, prompt) {
-    const tool = this.config.tools.find((t) => t.name === toolName);
+    // "claude" or "claude@chirp": each project gets its own session (12.4).
+    const tool = this.config.tools.find((t) => t.name === toolName.split("@")[0]);
     if (!tool) { this.router.unlock(); return [ev("error", `${toolName} is not in your config.`)]; }
     const events = [];
-    if (this.terminals.has(tool.name) && !this.terminals.isDead(tool.name)) {
-      events.push(ev("info", `${tool.name} is already running. Talking to it now.`));
+    if (this.terminals.has(toolName) && !this.terminals.isDead(toolName)) {
+      events.push(ev("info", `${spokenName(toolName)} is already running. Talking to it now.`));
     } else {
-      if (this.terminals.has(tool.name)) this.terminals.kill(tool.name);
+      if (this.terminals.has(toolName)) this.terminals.kill(toolName);
       let cwd = directory ? path.resolve(expandHome(directory)) : os.homedir();
       if (!fs.existsSync(cwd)) {
         events.push(ev("warning", `${directory} doesn't exist; starting ${tool.name} in your home folder.`));
         cwd = os.homedir();
       }
       try {
-        await this.terminals.start(tool.name, tool.command, cwd, this.size);
+        await this.terminals.start(toolName, tool.command, cwd, this.size);
       } catch (error) {
         this.router.unlock();
         return [ev("error", `Couldn't start ${tool.name}: ${error.message}`)];
@@ -160,18 +190,20 @@ export class VoxEngine {
       events.push(ev("success", `Started ${tool.name}${directory ? ` in ${directory}` : ""}. Talking to it now.`));
       if (prompt) await this.pause(tool.startupDelaySeconds * 1000);
     }
-    if (prompt) events.push(...(await this.sendToTool(prompt, tool.name)));
+    if (prompt) events.push(...(await this.sendToTool(prompt, toolName)));
     return events;
   }
 
-  async sendToTool(text, tool) {
-    if (!this.terminals.has(tool)) { this.router.unlock(); return [ev("error", `Session ${tool} is not running.`)]; }
+  async sendToTool(text, name) {
+    const t = this.target(name, ev("error", `Session ${name} is not running.`));
+    if (t.event) { this.router.unlock(); return [t.event]; }
+    const tool = t.instance;
     if (this.terminals.isDead(tool)) { this.router.unlock(); return [ev("error", `The program in ${tool} has exited. Say "kill" and run it again.`)]; }
     try {
       this.terminals.type(tool, text);
       await this.pause(this.submitDelayMs);
       this.terminals.submit(tool);
-      return [ev("success", `→ ${tool}: ${text}`)];
+      return [ev("success", `→ ${spokenName(tool)}: ${text}`)];
     } catch (error) {
       return [ev("error", error.message)];
     }

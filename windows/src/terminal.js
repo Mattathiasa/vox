@@ -14,15 +14,27 @@ export const KEY_SEQUENCES = {
   1: "1", 2: "2", 3: "3", 4: "4", 5: "5", 6: "6", 7: "7", 8: "8", 9: "9",
 };
 
-/** "Free Buff!" -> "free-buff" (same as SessionNaming minus the "vox-" prefix). */
+/** "Free Buff!" -> "free-buff"; "claude@chirp" -> "claude--chirp" (same as SessionNaming minus "vox-"). */
 export function slug(tool) {
+  const at = tool.indexOf("@");
+  if (at >= 0) return `${slugPart(tool.slice(0, at))}--${slugPart(tool.slice(at + 1))}`;
+  return slugPart(tool);
+}
+
+// Collapses runs of separators, so "--" only ever means "in project" (12.4).
+function slugPart(text) {
   let out = "";
-  for (const ch of tool.toLowerCase()) {
-    if (/[a-z0-9_-]/.test(ch)) out += ch;
+  for (const ch of text.toLowerCase()) {
+    if (/[a-z0-9_]/.test(ch)) out += ch;
     else if (!out.endsWith("-")) out += "-";
   }
   return out.replace(/^-+|-+$/g, "");
 }
+
+/** "claude--chirp" -> "claude@chirp": the name the router, phone and Vox window use. */
+export const instanceName = (key) => key.replace("--", "@");
+/** "claude@chirp" -> "claude in chirp". */
+export const spokenName = (instance) => instance.replace("@", " in ");
 
 async function loadPty() {
   try {
@@ -43,7 +55,7 @@ export class TerminalHost {
 
   has(tool) { return this.sessions.has(slug(tool)); }
   isDead(tool) { return this.sessions.get(slug(tool))?.exited ?? false; }
-  list() { return [...this.sessions.keys()]; }
+  list() { return [...this.sessions.keys()].map(instanceName); }
 
   async start(tool, command, cwd, { cols = 120, rows = 34 } = {}) {
     const name = slug(tool);

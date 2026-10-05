@@ -189,6 +189,11 @@ public struct VoxConfig: Codable, Equatable, Sendable {
         tools.first { $0.name == name }
     }
 
+    /// "claude@chirp" -> the claude entry.
+    public func tool(forInstance instance: String) -> ToolConfig? {
+        tool(named: InstanceName.tool(instance))
+    }
+
     public func project(named name: String) -> ProjectConfig? {
         projects.first { $0.name == name }
     }

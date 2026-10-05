@@ -10,8 +10,9 @@ final class SessionRouterTests: XCTestCase {
 
     func testLaunchLocksToTool() {
         let actions = router.handle("run freebuff in chirp")
-        XCTAssertEqual(actions, [.launch(tool: "freebuff", directory: "~/Projects/chirp", initialPrompt: nil)])
-        XCTAssertEqual(router.mode, .locked(tool: "freebuff"))
+        XCTAssertEqual(actions, [.launch(tool: "freebuff@chirp", directory: "~/Projects/chirp", initialPrompt: nil)],
+                       "a project gets its own session (12.4)")
+        XCTAssertEqual(router.mode, .locked(tool: "freebuff@chirp"))
     }
 
     func testLaunchUsesToolDefaultDirectory() {

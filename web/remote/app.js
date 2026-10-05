@@ -98,7 +98,8 @@ function setConnected(ok) {
 
 // MARK: Rendering
 
-const slug = (tool) => tool.toLowerCase().replace(/[^a-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "");
+// Keeps "@": "claude@chirp" is a second session of claude, in the chirp project (Phase 12.4).
+const slug = (tool) => tool.toLowerCase().replace(/[^a-z0-9_@-]+/g, "-").replace(/^-+|-+$/g, "");
 
 function phaseOf(s) {
   if (s.pendingQuestion) return { cls: "confirm", label: "Needs your OK" };

@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
+import { spokenName } from "./terminal.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const DEFAULT_WEB_DIR = [path.join(HERE, "..", "public"), path.join(HERE, "..", "..", "web", "remote")]
@@ -139,9 +140,10 @@ async function api(req, res, url, agent, pairing) {
   const action = match[2];
   let events;
   switch (action) {
-    case "launch": events = await agent.command(`vox run ${tool}`, { source: "phone" }); break;
-    case "kill": events = await agent.command(`vox kill ${tool}`, { source: "phone" }); break;
-    case "focus": events = await agent.command(`vox switch to ${tool}`, { source: "phone" }); break;
+    // "claude@chirp" is said "claude in chirp" so the grammar reads it back as that session (12.4).
+    case "launch": events = await agent.command(`vox run ${spokenName(tool)}`, { source: "phone" }); break;
+    case "kill": events = await agent.command(`vox kill ${spokenName(tool)}`, { source: "phone" }); break;
+    case "focus": events = await agent.command(`vox switch to ${spokenName(tool)}`, { source: "phone" }); break;
     case "send": events = await agent.sendToTool(tool, text); break;
     case "type": events = agent.engine.type(text, tool); break;
     case "key": events = agent.engine.press(String(body.key || ""), tool); break;

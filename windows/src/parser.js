@@ -179,14 +179,14 @@ export class CommandParser {
     const question = readQuestions.match(tokens, i);
     if (question) {
       const j = this.skipArticles(tokens, i + question.length);
-      const tool = this.tools.match(tokens, j);
+      const tool = this.matchInstance(tokens, j);
       const ending = tool ? readQuestionEndings.match(tokens, j + tool.length) : null;
       if (tool && ending && j + tool.length + ending.length === tokens.length) return { tool: tool.value };
     }
     const prefix = readFromPrefixes.match(tokens, i);
     if (prefix) {
       const j = this.skipArticles(tokens, i + prefix.length);
-      const tool = this.tools.match(tokens, j);
+      const tool = this.matchInstance(tokens, j);
       if (tool) {
         let end = j + tool.length;
         const ending = readEndings.match(tokens, end);
@@ -253,7 +253,7 @@ export class CommandParser {
       else if (tokens[k].norm === "to") k += 1;
       else if (!isAnswer) return null;
       k = this.skipArticles(tokens, k);
-      const match = this.tools.match(tokens, k);
+      const match = this.matchInstance(tokens, k);
       if (!match || k + match.length !== tokens.length) return null;
       tool = match.value;
     }
@@ -301,7 +301,7 @@ export class CommandParser {
     verb = focusVerbs.match(tokens, i);
     if (verb) {
       const j = this.skipArticles(tokens, i + verb.length);
-      const tool = this.tools.match(tokens, j);
+      const tool = this.matchInstance(tokens, j);
       if (tool && !this.isAppNoun(tokens, j + tool.length)) return { type: "focus", tool: tool.value };
       const intent = this.parseAppClause(text, tokens, j, (name) => ({ type: "focusApp", name }));
       if (intent) return intent;
@@ -310,13 +310,13 @@ export class CommandParser {
     verb = killVerbs.match(tokens, i);
     if (verb) {
       const j = this.skipArticles(tokens, i + verb.length);
-      const tool = this.tools.match(tokens, j);
+      const tool = this.matchInstance(tokens, j);
       if (tool && !this.isAppNoun(tokens, j + tool.length)) return { type: "kill", tool: tool.value };
       const intent = this.parseAppClause(text, tokens, j, (name) => ({ type: "quitApp", name }));
       if (intent) return intent;
       return this.unknownTool(text, tokens, j);
     }
-    const tool = this.tools.match(tokens, i);
+    const tool = this.matchInstance(tokens, i);
     if (tool && tool.length === rest.length) return { type: "focus", tool: tool.value };
     return { type: "unknown" };
   }
@@ -343,6 +343,24 @@ export class CommandParser {
     const c = connectors.match(tokens, j);
     if (c) j += c.length;
     return { type: "launch", tool: tool.value, project, prompt: remainder(text, tokens, j) };
+  }
+
+  /** A running tool, optionally with its project (12.4): "claude in chirp" -> {value: "claude@chirp", length}. */
+  matchInstance(tokens, i) {
+    const tool = this.tools.match(tokens, i);
+    if (!tool) return null;
+    const after = i + tool.length;
+    const loc = locationWords.match(tokens, after);
+    if (loc) {
+      const k = this.skipArticles(tokens, after + loc.length);
+      const project = this.projects.match(tokens, k);
+      if (project) {
+        let end = k + project.length;
+        if (end < tokens.length && PROJECT_NOUNS.has(tokens[end].norm)) end += 1;
+        return { value: `${tool.value}@${project.value}`, length: end - i };
+      }
+    }
+    return tool;
   }
 
   isAppNoun(tokens, index) { return index < tokens.length && APP_NOUNS.has(tokens[index].norm); }
@@ -483,7 +501,7 @@ export class CommandParser {
     const tell = tellToolVerbs.match(tokens, i);
     if (tell) {
       let j = this.skipArticles(tokens, i + tell.length);
-      const tool = this.tools.match(tokens, j);
+      const tool = this.matchInstance(tokens, j);
       const claudeApp = tool && tool.value === "claude" && j + tool.length < tokens.length && CLAUDE_DESKTOP_NOUNS.has(tokens[j + tool.length].norm);
       if (tool && !claudeApp) {
         j += tool.length;
@@ -505,19 +523,19 @@ export class CommandParser {
     const interrupt = interruptVerbs.match(tokens, i);
     if (interrupt) {
       const j = this.skipArticles(tokens, i + interrupt.length);
-      const tool = this.tools.match(tokens, j);
+      const tool = this.matchInstance(tokens, j);
       if (tool && j + tool.length === tokens.length && interrupt.value === "interrupt") return { type: "interrupt", tool: tool.value };
     }
     const restart = restartVerbs.match(tokens, i);
     if (restart) {
       const j = this.skipArticles(tokens, i + restart.length);
-      const tool = this.tools.match(tokens, j);
+      const tool = this.matchInstance(tokens, j);
       if (tool && j + tool.length === tokens.length) return { type: "restart", tool: tool.value };
     }
     const watch = watchVerbs.match(tokens, i);
     if (watch) {
       const j = this.skipArticles(tokens, i + watch.length);
-      const tool = this.tools.match(tokens, j);
+      const tool = this.matchInstance(tokens, j);
       if (tool && j + tool.length === tokens.length) return { type: "show", tool: tool.value };
     }
     return null;

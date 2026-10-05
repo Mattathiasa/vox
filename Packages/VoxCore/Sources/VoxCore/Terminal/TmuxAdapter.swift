@@ -4,18 +4,35 @@ public enum SessionNaming {
     public static let prefix = "vox-"
 
     /// "Free Buff!" -> "vox-free-buff". tmux forbids "." and ":" in names.
+    /// A second session of a tool in a project, "claude@chirp" (Phase 12.4) -> "vox-claude--chirp".
     public static func sessionName(forTool tool: String) -> String {
-        let allowed = Set("abcdefghijklmnopqrstuvwxyz0123456789-_")
+        if let at = tool.firstIndex(of: "@") {
+            return prefix + slug(tool[..<at]) + projectSeparator + slug(tool[tool.index(after: at)...])
+        }
+        return prefix + slug(Substring(tool))
+    }
+
+    /// "vox-claude--chirp" -> "claude@chirp", "vox-claude" -> "claude": the name the HUD, phone and router use.
+    public static func instance(fromSession session: String) -> String {
+        let name = session.hasPrefix(prefix) ? String(session.dropFirst(prefix.count)) : session
+        guard let range = name.range(of: projectSeparator) else { return name }
+        return name.replacingCharacters(in: range, with: "@")
+    }
+
+    /// Never produced by `slug` (it collapses runs of separators), so it can't clash with a tool name.
+    static let projectSeparator = "--"
+
+    static func slug(_ text: Substring) -> String {
+        let allowed = Set("abcdefghijklmnopqrstuvwxyz0123456789_")
         var slug = ""
-        for ch in tool.lowercased() {
+        for ch in text.lowercased() {
             if allowed.contains(ch) {
                 slug.append(ch)
             } else if slug.last != "-" {
                 slug.append("-")
             }
         }
-        slug = slug.trimmingCharacters(in: CharacterSet(charactersIn: "-"))
-        return prefix + slug
+        return slug.trimmingCharacters(in: CharacterSet(charactersIn: "-"))
     }
 }
 

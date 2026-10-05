@@ -121,8 +121,8 @@ public actor VoxEngine {
 
     /// The HUD's per-terminal key buttons (Enter, Esc, ↑, ↓, Tab, ⌃C…).
     public func press(_ key: String, inTool tool: String) -> [EngineEvent] {
-        let session = SessionNaming.sessionName(forTool: tool)
-        guard tmux.hasSession(session) else { return [EngineEvent(.warning, "\(tool) isn't running.")] }
+        let found = target(tool, missing: EngineEvent(.warning, "\(tool) isn't running."))
+        guard case let .found(_, session) = found else { return found.events }
         do {
             try tmux.sendKey(session: session, key: key)
             return []
@@ -136,8 +136,8 @@ public actor VoxEngine {
     /// confirmation rules apply to whole commands (send/tell), not single keystrokes.
     public func type(_ text: String, inTool tool: String) -> [EngineEvent] {
         guard !text.isEmpty else { return [] }
-        let session = SessionNaming.sessionName(forTool: tool)
-        guard tmux.hasSession(session) else { return [EngineEvent(.warning, "\(tool) isn't running.")] }
+        let found = target(tool, missing: EngineEvent(.warning, "\(tool) isn't running."))
+        guard case let .found(_, session) = found else { return found.events }
         do {
             try tmux.type(session: session, text: String(text.prefix(4000)))
             return []
@@ -190,7 +190,7 @@ public actor VoxEngine {
                 let text = Self.tidy((try? tmux.capture(session: session, lines: lines)) ?? "")
                 let exited = tmux.isPaneDead(session)
                 return SessionScreen(
-                    tool: String(session.dropFirst(SessionNaming.prefix.count)),
+                    tool: SessionNaming.instance(fromSession: session),
                     text: text,
                     exited: exited,
                     activity: ActivityDetector.classify(
@@ -209,9 +209,42 @@ public actor VoxEngine {
         return current.compactMap { attention.update(tool: $0.tool, activity: $0.activity) }
     }
 
-    /// The config entry a tmux session belongs to ("vox-claude" -> claude).
+    /// The config entry a tmux session belongs to ("vox-claude", "vox-claude--chirp" -> claude).
     func toolConfig(forSession session: String) -> ToolConfig? {
-        config.tools.first { SessionNaming.sessionName(forTool: $0.name) == session }
+        let base = SessionNaming.sessionName(forTool: InstanceName.tool(SessionNaming.instance(fromSession: session)))
+        return config.tools.first { SessionNaming.sessionName(forTool: $0.name) == base }
+    }
+
+    // MARK: Which session (Phase 12.4)
+
+    enum Target {
+        case found(instance: String, session: String)
+        case problem(EngineEvent)
+
+        var events: [EngineEvent] {
+            if case let .problem(event) = self { return [event] }
+            return []
+        }
+    }
+
+    /// The running session a name means. "claude" is the default session; when only
+    /// "claude@chirp" runs, "claude" means that one; with several, ask instead of guessing.
+    func target(_ name: String, missing: @autoclosure () -> EngineEvent) -> Target {
+        let exact = SessionNaming.sessionName(forTool: name)
+        if tmux.hasSession(exact) { return .found(instance: name, session: exact) }
+        guard InstanceName.project(name) == nil else { return .problem(missing()) }
+        let others = tmux.listSessions().filter { $0.hasPrefix(exact + SessionNaming.projectSeparator) }.sorted()
+        switch others.count {
+        case 0:
+            return .problem(missing())
+        case 1:
+            return .found(instance: SessionNaming.instance(fromSession: others[0]), session: others[0])
+        default:
+            let projects = others.compactMap { InstanceName.project(SessionNaming.instance(fromSession: $0)) }
+            let list = projects.dropLast().joined(separator: ", ") + " and " + projects.last!
+            return .problem(EngineEvent(.info,
+                "\(name) is running in \(list). Say \"\(name) in \(projects[0])\" to pick one."))
+        }
     }
 
     /// Last size sent to each session, so resizes only happen on change.
@@ -266,24 +299,24 @@ public actor VoxEngine {
             return await launch(toolName, directory: directory, prompt: prompt)
 
         case let .focus(toolName):
-            let session = SessionNaming.sessionName(forTool: toolName)
-            guard tmux.hasSession(session) else {
+            let found = target(toolName, missing: EngineEvent(.warning, "\(InstanceName.spoken(toolName)) isn't running. Say \"run \(InstanceName.spoken(toolName))\"."))
+            guard case let .found(instance, _) = found else {
                 router.unlock()
-                return [EngineEvent(.warning, "\(toolName) isn't running. Say \"run \(toolName)\".")]
+                return found.events
             }
-            return [EngineEvent(.success, "Talking to \(toolName). Say \"exit\" to stop.")]
+            if instance != toolName { router.lock(to: instance) }
+            return [EngineEvent(.success, "Talking to \(InstanceName.spoken(instance)). Say \"exit\" to stop.")]
 
         case let .send(toolName, text):
             return await send(text, to: toolName)
 
         case let .kill(toolName):
-            let session = SessionNaming.sessionName(forTool: toolName)
-            guard tmux.hasSession(session) else {
-                return [EngineEvent(.info, "\(toolName) wasn't running.")]
-            }
+            let found = target(toolName, missing: EngineEvent(.info, "\(InstanceName.spoken(toolName)) wasn't running."))
+            guard case let .found(instance, session) = found else { return found.events }
             do {
                 try tmux.kill(session: session)
-                return [EngineEvent(.success, "Killed \(toolName).")]
+                if router.mode.lockedTool == instance { router.unlock() }
+                return [EngineEvent(.success, "Killed \(InstanceName.spoken(instance)).")]
             } catch {
                 return [EngineEvent(.error, String(describing: error))]
             }
@@ -291,57 +324,50 @@ public actor VoxEngine {
         case .listSessions:
             let sessions = tmux.listSessions()
             if sessions.isEmpty { return [EngineEvent(.info, "No tools running.")] }
-            let names = sessions.map { String($0.dropFirst(SessionNaming.prefix.count)) }
+            let names = sessions.map { InstanceName.spoken(SessionNaming.instance(fromSession: $0)) }
             return [EngineEvent(.info, "Running: " + names.joined(separator: ", "))]
 
         case let .desktop(command):
             return await runDesktop(command)
 
         case let .interrupt(toolName):
-            let session = SessionNaming.sessionName(forTool: toolName)
-            guard tmux.hasSession(session) else {
-                return [EngineEvent(.info, "\(toolName) isn't running.")]
-            }
+            let found = target(toolName, missing: EngineEvent(.info, "\(InstanceName.spoken(toolName)) isn't running."))
+            guard case let .found(instance, session) = found else { return found.events }
             do {
                 try tmux.interrupt(session: session)
-                return [EngineEvent(.success, "Interrupted \(toolName).")]
+                return [EngineEvent(.success, "Interrupted \(InstanceName.spoken(instance)).")]
             } catch {
                 return [EngineEvent(.error, String(describing: error))]
             }
 
         case let .keys(toolName, keys):
-            let session = SessionNaming.sessionName(forTool: toolName)
-            guard tmux.hasSession(session) else {
-                return [EngineEvent(.warning, "\(toolName) isn't running.")]
-            }
+            let found = target(toolName, missing: EngineEvent(.warning, "\(InstanceName.spoken(toolName)) isn't running."))
+            guard case let .found(instance, session) = found else { return found.events }
             do {
                 for (n, key) in keys.enumerated() {
                     if n > 0 { await pause(0.05) }
                     try tmux.sendKey(session: session, key: key)
                 }
-                return [EngineEvent(.success, "Pressed \(Self.describe(keys)) in \(toolName).")]
+                return [EngineEvent(.success, "Pressed \(Self.describe(keys)) in \(InstanceName.spoken(instance)).")]
             } catch {
                 return [EngineEvent(.error, String(describing: error))]
             }
 
         case let .readOutput(toolName):
-            let session = SessionNaming.sessionName(forTool: toolName)
-            guard tmux.hasSession(session) else {
-                return [EngineEvent(.warning, "\(toolName) isn't running.")]
-            }
+            let found = target(toolName, missing: EngineEvent(.warning, "\(InstanceName.spoken(toolName)) isn't running."))
+            guard case let .found(instance, session) = found else { return found.events }
+            let name = InstanceName.spoken(instance)
             let answer = ScreenReader.lastAnswer(Self.tidy((try? tmux.capture(session: session, lines: 120)) ?? ""))
-            if answer.isEmpty { return [EngineEvent(.info, "\(toolName) hasn't said anything yet.")] }
-            return [EngineEvent(.info, "\(toolName) says: \(answer)", readAloud: true)]
+            if answer.isEmpty { return [EngineEvent(.info, "\(name) hasn't said anything yet.")] }
+            return [EngineEvent(.info, "\(name) says: \(answer)", readAloud: true)]
 
         case let .showTool(toolName):
-            let session = SessionNaming.sessionName(forTool: toolName)
-            guard tmux.hasSession(session) else {
-                return [EngineEvent(.warning, "\(toolName) isn't running. Say \"run \(toolName)\".")]
-            }
+            let found = target(toolName, missing: EngineEvent(.warning, "\(InstanceName.spoken(toolName)) isn't running. Say \"run \(InstanceName.spoken(toolName))\"."))
+            guard case let .found(instance, session) = found else { return found.events }
             guard let desktop else { return [EngineEvent(.error, "Desktop control isn't available.")] }
             do {
                 try await desktop.openTerminal(running: TmuxAdapter.attachCommand(session: session))
-                return [EngineEvent(.success, "Showing \(toolName) in Terminal.")]
+                return [EngineEvent(.success, "Showing \(InstanceName.spoken(instance)) in Terminal.")]
             } catch {
                 return [EngineEvent(.error, String(describing: error))]
             }
@@ -700,15 +726,17 @@ public actor VoxEngine {
     }
 
     private func launch(_ toolName: String, directory: String?, prompt: String?) async -> [EngineEvent] {
-        guard let tool = config.tool(named: toolName) else {
+        guard let tool = config.tool(forInstance: toolName) else {
             router.unlock()
             return [EngineEvent(.error, "\(toolName) is not in your config.")]
         }
-        let session = SessionNaming.sessionName(forTool: tool.name)
+        // "claude" or "claude@chirp": each project gets its own session (Phase 12.4).
+        let session = SessionNaming.sessionName(forTool: toolName)
+        let name = InstanceName.spoken(toolName)
         var events: [EngineEvent] = []
 
         if tmux.hasSession(session) && !tmux.isPaneDead(session) {
-            events.append(EngineEvent(.info, "\(tool.name) is already running. Talking to it now."))
+            events.append(EngineEvent(.info, "\(name) is already running. Talking to it now."))
         } else {
             if tmux.hasSession(session) {
                 // A dead pane left by remain-on-exit: clear it and start fresh.
@@ -728,26 +756,26 @@ public actor VoxEngine {
         }
 
         if let prompt {
-            events += await send(prompt, to: tool.name)
+            events += await send(prompt, to: toolName)
         }
         return events
     }
 
     private func send(_ text: String, to toolName: String) async -> [EngineEvent] {
-        let session = SessionNaming.sessionName(forTool: toolName)
-        guard tmux.hasSession(session) else {
+        let found = target(toolName, missing: EngineEvent(.error, TmuxError.sessionNotRunning(toolName).description))
+        guard case let .found(instance, session) = found else {
             router.unlock()
-            return [EngineEvent(.error, TmuxError.sessionNotRunning(toolName).description)]
+            return found.events
         }
         if tmux.isPaneDead(session) {
             router.unlock()
-            return [EngineEvent(.error, TmuxError.processExited(toolName).description)]
+            return [EngineEvent(.error, TmuxError.processExited(instance).description)]
         }
         do {
             try tmux.type(session: session, text: text)
             await pause(submitDelaySeconds)
             try tmux.submit(session: session)
-            return [EngineEvent(.success, "→ \(toolName): \(text)")]
+            return [EngineEvent(.success, "→ \(InstanceName.spoken(instance)): \(text)")]
         } catch {
             return [EngineEvent(.error, String(describing: error))]
         }

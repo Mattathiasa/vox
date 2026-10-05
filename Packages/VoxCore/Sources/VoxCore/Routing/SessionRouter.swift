@@ -76,6 +76,11 @@ public struct SessionRouter: Sendable {
         mode = .idle
     }
 
+    /// The engine found which session "claude" meant ("claude@chirp"), so keep talking to that one.
+    public mutating func lock(to tool: String) {
+        mode = .locked(tool: tool)
+    }
+
     public mutating func cancelPending() {
         pending = nil
     }
@@ -97,7 +102,8 @@ public struct SessionRouter: Sendable {
         if case let .locked(tool) = mode {
             if parser.isExit(trimmed) {
                 mode = .idle
-                return [.feedback("Stopped talking to \(tool). \(tool) is still running.")]
+                let name = InstanceName.spoken(tool)
+                return [.feedback("Stopped talking to \(name). \(name) is still running.")]
             }
             if parser.isInterrupt(trimmed) {
                 return [.interrupt(tool: tool)]
@@ -114,7 +120,7 @@ public struct SessionRouter: Sendable {
                 return handleCommand(command)
             }
             return guarded([.send(tool: tool, text: trimmed)], text: trimmed,
-                           question: "Send to \(tool): \"\(trimmed)\"?")
+                           question: "Send to \(InstanceName.spoken(tool)): \"\(trimmed)\"?")
         }
 
         // 3. Idle: everything is a command.
@@ -133,7 +139,9 @@ public struct SessionRouter: Sendable {
             if let projectName {
                 directory = config.project(named: projectName)?.path ?? directory
             }
-            let action = RouterAction.launch(tool: tool.name, directory: directory, initialPrompt: prompt)
+            // In a project it's its own session ("claude@chirp"), so claude in vox keeps running (Phase 12.4).
+            let instance = InstanceName.make(tool: tool.name, project: projectName)
+            let action = RouterAction.launch(tool: instance, directory: directory, initialPrompt: prompt)
             guard let prompt else { return release([action]) }
             return guarded([action], text: prompt,
                            question: "Start \(tool.name) and send: \"\(prompt)\"?")
@@ -143,7 +151,7 @@ public struct SessionRouter: Sendable {
 
         case let .kill(tool):
             return hold([.kill(tool: tool)],
-                        question: "Kill the \(tool) session? Anything it is doing will stop.")
+                        question: "Kill the \(InstanceName.spoken(tool)) session? Anything it is doing will stop.")
 
         case .listSessions:
             return [.listSessions]
@@ -176,13 +184,13 @@ public struct SessionRouter: Sendable {
             }
             return [.interrupt(tool: target)]
 
-        case let .restart(toolName):
-            guard let tool = config.tool(named: toolName) else {
-                return [.feedback("\(toolName) is not in your config.")]
+        case let .restart(instance):
+            guard let tool = config.tool(forInstance: instance) else {
+                return [.feedback("\(instance) is not in your config.")]
             }
-            return hold([.kill(tool: tool.name),
-                         .launch(tool: tool.name, directory: tool.defaultDirectory, initialPrompt: nil)],
-                        question: "Restart \(tool.name)? Whatever it's doing will stop.")
+            let directory = InstanceName.project(instance).flatMap { config.project(named: $0)?.path } ?? tool.defaultDirectory
+            return hold([.kill(tool: instance), .launch(tool: instance, directory: directory, initialPrompt: nil)],
+                        question: "Restart \(InstanceName.spoken(instance))? Whatever it's doing will stop.")
 
         case let .showTool(tool):
             return [.showTool(tool)]
@@ -249,9 +257,9 @@ public struct SessionRouter: Sendable {
     public mutating func sendTo(tool: String, text: String) -> [RouterAction] {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return [] }
-        guard config.tool(named: tool) != nil else { return [.feedback("\(tool) is not in your config.")] }
+        guard config.tool(forInstance: tool) != nil else { return [.feedback("\(tool) is not in your config.")] }
         return guarded([.send(tool: tool, text: trimmed)], text: trimmed,
-                       question: "Send to \(tool): \"\(trimmed)\"?")
+                       question: "Send to \(InstanceName.spoken(tool)): \"\(trimmed)\"?")
     }
 
     // MARK: Confirmation plumbing

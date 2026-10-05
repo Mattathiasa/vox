@@ -14,13 +14,13 @@ final class VoxEngineTests: XCTestCase {
     func testLaunchThenPassThrough() async {
         let started = await engine.handle("run freebuff in chirp")
         XCTAssertEqual(started.first?.kind, .success)
-        XCTAssertTrue(runner.sessions.contains("vox-freebuff"))
+        XCTAssertTrue(runner.sessions.contains("vox-freebuff--chirp"))
         let mode = await engine.mode
-        XCTAssertEqual(mode, .locked(tool: "freebuff"))
+        XCTAssertEqual(mode, .locked(tool: "freebuff@chirp"))
 
         _ = await engine.handle("add a retry to the websocket client")
-        XCTAssertEqual(runner.typed["vox-freebuff"], ["add a retry to the websocket client"])
-        XCTAssertEqual(runner.calls.last, ["send-keys", "-t", "vox-freebuff:", "Enter"])
+        XCTAssertEqual(runner.typed["vox-freebuff--chirp"], ["add a retry to the websocket client"])
+        XCTAssertEqual(runner.calls.last, ["send-keys", "-t", "vox-freebuff--chirp:", "Enter"])
     }
 
     func testLaunchWithInitialPromptSendsIt() async {

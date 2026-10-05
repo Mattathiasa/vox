@@ -117,7 +117,7 @@ extension CommandParser {
         // "tell claude to fix the login bug", "ask freebuff what this file does"
         if let verb = Self.tellToolVerbs.match(tokens, at: i) {
             var j = skipArticles(tokens, from: i + verb.length)
-            if let tool = tools.match(tokens, at: j),
+            if let tool = matchInstance(tokens, at: j),
                !(tool.value == "claude" && j + tool.length < tokens.count && Self.claudeDesktopAppNouns.contains(tokens[j + tool.length].norm)) {
                 j += tool.length
                 if j < tokens.count, tokens[j].norm == "to" { j += 1 }
@@ -136,20 +136,20 @@ extension CommandParser {
 
         if let verb = Self.interruptVerbs.match(tokens, at: i) {
             let j = skipArticles(tokens, from: i + verb.length)
-            if let tool = tools.match(tokens, at: j), j + tool.length == tokens.count,
+            if let tool = matchInstance(tokens, at: j), j + tool.length == tokens.count,
                verb.value == "interrupt" {
                 return .interrupt(tool: tool.value)
             }
         }
         if let verb = Self.restartVerbs.match(tokens, at: i) {
             let j = skipArticles(tokens, from: i + verb.length)
-            if let tool = tools.match(tokens, at: j), j + tool.length == tokens.count {
+            if let tool = matchInstance(tokens, at: j), j + tool.length == tokens.count {
                 return .restart(tool: tool.value)
             }
         }
         if let verb = Self.watchVerbs.match(tokens, at: i) {
             let j = skipArticles(tokens, from: i + verb.length)
-            if let tool = tools.match(tokens, at: j), j + tool.length == tokens.count {
+            if let tool = matchInstance(tokens, at: j), j + tool.length == tokens.count {
                 return .showTool(tool.value)
             }
         }

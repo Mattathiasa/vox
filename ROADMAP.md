@@ -38,6 +38,8 @@ Never mark `[x]` for something you could not run. Use `[w]` and say why in the L
   3. Owner: Tailscale on Mac + iPhone → `scripts/Remote-Tailscale.command` → scan the QR.
   4. Windows: `scripts/Package-Windows.command` → copy `dist/Vox-Windows.zip` to the PC → `Install-Vox.cmd`.
 - **Phase 12 (completeness, 2026-10-05):** owner asked for the audit list in the roadmap and to start on 12.1–12.4.
+  All four are in (one commit each): attention alerts, keys by voice ("approve", "press escape"), "what did claude say",
+  and one session per project (`claude@chirp`). Owner checks are listed under each item; next code item is 12.5 (draft mode).
 - **How agents verify on this Mac:** `scripts/Verify.command` (unit tests + app build → `.logs/verify.log`),
   `scripts/Verify-Tools.command` (real tmux + tools → `.logs/selftest.log`), `cd windows && npm test`.
 - **Blockers:** agents can't see Vox's own window (need the owner's eyes for GUI/HUD visuals); Electron's binary
@@ -429,8 +431,11 @@ grammar plus a case in `shared/grammar-cases.json`.
       Done: `Engine/ScreenReader.swift` (last ⏺/✦/• answer, skips tool calls, ⎿ results, input box, status line; ≤700 chars,
       cut at a sentence), `Parsing/ReadOutput.swift`, `EngineEvent.readAloud` (Mac + phone speak it in full); JS port in
       `windows/src/reader.js`. **Owner:** ask "what did claude say" after a real answer and check what's read.
-- [ ] 12.4 **Several sessions per tool.** "run claude in chirp" while claude runs in vox starts a second session
+- [w] 12.4 **Several sessions per tool.** "run claude in chirp" while claude runs in vox starts a second session
       (`claude-chirp`) instead of silently focusing the vox one; "switch to claude in chirp", kill/tell by project.
+      Done: instance names `claude@chirp` ↔ tmux `vox-claude--chirp` (ARCHITECTURE D19); "<tool> in <project>" works in
+      switch/kill/tell/interrupt/restart/show/keys/read; a bare "claude" = default session, else the only one, else Vox asks.
+      HUD/phone buttons say the instance as "claude in chirp". **Owner:** run claude in two projects from the HUD and phone.
 - [ ] 12.5 Draft mode for prompts: "scratch that", "add …", "send it" before text reaches an agent
 - [ ] 12.6 Pass-through to an IDE terminal (same as Phase 4's open item)
 
@@ -477,6 +482,13 @@ Newest first. One entry per work session: date, who, what changed, **how it was 
   `EngineEvent.readAloud` (+ `readAloud: "true"` in phone events) lifts the 120-character speech limit. Verified: `scripts/test.sh`
   OK (210 tests, 6 new in `ReadOutputTests`), 5 shared parity cases, `npm test` 19/19 (new `reader.test.js` with the same fixtures).
   Fixtures are hand-trimmed Claude/Gemini/Codex screens, not a live capture.
+- **12.4 sessions per project:** `SessionNaming` (`@` ↔ `--`, slug can't produce `--`), `InstanceName`, `CommandParser.matchInstance`,
+  router launches `tool@project`, engine `target()` resolves a bare name (exact → only one → ask), re-locks the router to the real
+  session, unlocks on kill; HUD/phone send "vox run/kill/switch to claude in chirp"; web slug keeps `@`. JS port: same grammar,
+  `TerminalHost` keys `claude--chirp` and lists `claude@chirp`, engine `target()`, server says the spoken form.
+  Behaviour change: "run freebuff in chirp" now starts `freebuff@chirp` (2 shared cases and 2 Swift tests updated on purpose).
+  Verified: `scripts/test.sh` OK (216 tests, 6 new in `InstanceTests` + a route test), 9 new shared parity cases, `npm test` 22/22
+  (new `instances.test.js`), and real tmux keeps `=vox-claude` and `=vox-claude--chirp` apart. Not run: the HUD/phone by hand.
 
 ### 2026-09-24 · Phase 11 W0: Windows baseline verified on the owner's PC + spikes (on Windows)
 

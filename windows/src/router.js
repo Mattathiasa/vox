@@ -2,6 +2,9 @@
 import { CommandParser } from "./parser.js";
 import { SafetyPolicy } from "./safety.js";
 
+// "claude@chirp" (a session of claude in the chirp project, 12.4) -> "claude in chirp".
+const spoken = (instance) => instance.replace("@", " in ");
+
 export const HELP_TEXT = `Apps: open / close / switch to steam · open discord · open downloads
 Web: search for … · search youtube for … · play … on youtube · go to github dot com
 Keys: close tab · new tab · copy · paste · undo · save · scroll down · go back · lock screen
@@ -38,7 +41,7 @@ export class SessionRouter {
       const tool = this.lockedTool;
       if (this.parser.isExit(trimmed)) {
         this.lockedTool = null;
-        return [{ action: "feedback", message: `Stopped talking to ${tool}. ${tool} is still running.` }];
+        return [{ action: "feedback", message: `Stopped talking to ${spoken(tool)}. ${spoken(tool)} is still running.` }];
       }
       if (this.parser.isInterrupt(trimmed)) return [{ action: "interrupt", tool }];
       // "press escape", "shift tab", "approve": keys for the tool, not text.
@@ -51,12 +54,13 @@ export class SessionRouter {
         if (command === "") return [{ action: "feedback", message: "Listening for a command." }];
         return this.handleCommand(command);
       }
-      return this.guarded([{ action: "send", tool, text: trimmed }], trimmed, `Send to ${tool}: "${trimmed}"?`);
+      return this.guarded([{ action: "send", tool, text: trimmed }], trimmed, `Send to ${spoken(tool)}: "${trimmed}"?`);
     }
     return this.handleCommand(trimmed);
   }
 
-  tool(name) { return this.config.tools.find((t) => t.name === name) || null; }
+  /** Config entry for a tool or an instance ("claude@chirp" -> claude). */
+  tool(name) { const base = name.split("@")[0]; return this.config.tools.find((t) => t.name === base) || null; }
   project(name) { return this.config.projects.find((p) => p.name === name) || null; }
 
   handleCommand(text) {
@@ -67,12 +71,14 @@ export class SessionRouter {
         if (!tool) return [{ action: "feedback", message: `${intent.tool} is not in your config.` }];
         let directory = tool.defaultDirectory;
         if (intent.project) directory = this.project(intent.project)?.path ?? directory;
-        const action = { action: "launch", tool: tool.name, directory: directory ?? null, prompt: intent.prompt ?? null };
+        // In a project it's its own session ("claude@chirp"), so claude elsewhere keeps running (12.4).
+        const instance = intent.project ? `${tool.name}@${intent.project}` : tool.name;
+        const action = { action: "launch", tool: instance, directory: directory ?? null, prompt: intent.prompt ?? null };
         if (!intent.prompt) return this.release([action]);
         return this.guarded([action], intent.prompt, `Start ${tool.name} and send: "${intent.prompt}"?`);
       }
       case "focus": return this.release([{ action: "focus", tool: intent.tool }]);
-      case "kill": return this.hold([{ action: "kill", tool: intent.tool }], `Kill the ${intent.tool} session? Anything it is doing will stop.`);
+      case "kill": return this.hold([{ action: "kill", tool: intent.tool }], `Kill the ${spoken(intent.tool)} session? Anything it is doing will stop.`);
       case "list": return [{ action: "list" }];
       case "desktop": {
         const actions = intent.commands.map((command) => ({ action: "desktop", command }));
@@ -95,8 +101,10 @@ export class SessionRouter {
       case "restart": {
         const tool = this.tool(intent.tool);
         if (!tool) return [{ action: "feedback", message: `${intent.tool} is not in your config.` }];
-        return this.hold([{ action: "kill", tool: tool.name }, { action: "launch", tool: tool.name, directory: tool.defaultDirectory ?? null, prompt: null }],
-          `Restart ${tool.name}? Whatever it's doing will stop.`);
+        const project = intent.tool.includes("@") ? this.project(intent.tool.split("@")[1]) : null;
+        const directory = project?.path ?? tool.defaultDirectory ?? null;
+        return this.hold([{ action: "kill", tool: intent.tool }, { action: "launch", tool: intent.tool, directory, prompt: null }],
+          `Restart ${spoken(intent.tool)}? Whatever it's doing will stop.`);
       }
       case "show": return [{ action: "show", tool: intent.tool }];
       case "toolKeys": {
@@ -126,7 +134,7 @@ export class SessionRouter {
     const trimmed = text.trim();
     if (!trimmed) return [];
     if (!this.tool(tool)) return [{ action: "feedback", message: `${tool} is not in your config.` }];
-    return this.guarded([{ action: "send", tool, text: trimmed }], trimmed, `Send to ${tool}: "${trimmed}"?`);
+    return this.guarded([{ action: "send", tool, text: trimmed }], trimmed, `Send to ${spoken(tool)}: "${trimmed}"?`);
   }
 
   guarded(actions, text, question) {

@@ -39,6 +39,8 @@ final class RemoteTests: XCTestCase {
                        .command(text: "run claude", spoken: true, fromPhone: true))
         XCTAssertEqual(route("POST", "/api/tools/claude%20code/send", #"{"text":"fix it"}"#), .send(tool: "claude code", text: "fix it"))
         XCTAssertEqual(route("POST", "/api/tools/kilo/key", #"{"key":"C-c"}"#), .key(tool: "kilo", key: "C-c"))
+        XCTAssertEqual(route("POST", "/api/tools/claude%40chirp/key", #"{"key":"Escape"}"#), .key(tool: "claude@chirp", key: "Escape"),
+                       "a project session (12.4), as the phone's encodeURIComponent sends it")
         XCTAssertEqual(route("POST", "/api/tools/kilo/type", #"{"text":"ls"}"#), .type(tool: "kilo", text: "ls"))
         XCTAssertEqual(route("POST", "/api/confirm", #"{"yes":true}"#), .confirm(yes: true))
         XCTAssertNil(route("GET", "/api/command"), "commands must be POST")

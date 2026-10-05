@@ -38,7 +38,7 @@
     {
      "say": "run freebuff in chirp and add tests",
      "expect": [
-      "launch|freebuff|~/Projects/chirp|add tests"
+      "launch|freebuff@chirp|~/Projects/chirp|add tests"
      ]
     }
    ]
@@ -48,7 +48,7 @@
     {
      "say": "start free buff in the box project",
      "expect": [
-      "launch|freebuff|~/Projects/vox|"
+      "launch|freebuff@vox|~/Projects/vox|"
      ]
     }
    ]
@@ -1241,6 +1241,127 @@
      "say": "read clipboard",
      "expect": [
       "desktop:answer|clipboard"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "run claude in chirp",
+     "expect": [
+      "launch|claude@chirp|~/Projects/chirp|"
+     ]
+    },
+    {
+     "say": "add tests",
+     "expect": [
+      "send|claude@chirp|add tests"
+     ]
+    },
+    {
+     "say": "approve",
+     "expect": [
+      "keys|claude@chirp|1"
+     ]
+    },
+    {
+     "say": "exit",
+     "expect": [
+      "feedback|Stopped talking to claude in chirp. claude in chirp is still running."
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "switch to claude in chirp",
+     "expect": [
+      "focus|claude@chirp"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "claude in the chip project",
+     "expect": [
+      "focus|claude@chirp"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "tell claude in chirp to add tests",
+     "expect": [
+      "send|claude@chirp|add tests"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "what did claude in chirp say",
+     "expect": [
+      "read|claude@chirp"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "press escape in claude in chirp",
+     "expect": [
+      "keys|claude@chirp|Escape"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "kill claude in chirp",
+     "expect": [
+      "confirm|Kill the claude in chirp session? Anything it is doing will stop. Say yes to confirm."
+     ]
+    },
+    {
+     "say": "yes",
+     "expect": [
+      "kill|claude@chirp"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "restart claude in chirp",
+     "expect": [
+      "confirm|Restart claude in chirp? Whatever it's doing will stop. Say yes to confirm."
+     ]
+    },
+    {
+     "say": "yes",
+     "expect": [
+      "kill|claude@chirp",
+      "launch|claude@chirp|~/Projects/chirp|"
+     ]
+    }
+   ]
+  },
+  {
+   "steps": [
+    {
+     "say": "tell claude in detail to explain",
+     "expect": [
+      "send|claude|in detail to explain"
      ]
     }
    ]

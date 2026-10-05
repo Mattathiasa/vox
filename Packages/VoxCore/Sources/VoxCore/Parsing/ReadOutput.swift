@@ -37,7 +37,7 @@ extension CommandParser {
 
         if let question = Self.readQuestions.match(tokens, at: i) {
             let j = skipArticles(tokens, from: i + question.length)
-            if let tool = tools.match(tokens, at: j),
+            if let tool = matchInstance(tokens, at: j),
                let ending = Self.readQuestionEndings.match(tokens, at: j + tool.length),
                j + tool.length + ending.length == tokens.count {
                 return ReadRequest(tool: tool.value)
@@ -45,7 +45,7 @@ extension CommandParser {
         }
         if let prefix = Self.readFromPrefixes.match(tokens, at: i) {
             let j = skipArticles(tokens, from: i + prefix.length)
-            if let tool = tools.match(tokens, at: j) {
+            if let tool = matchInstance(tokens, at: j) {
                 var end = j + tool.length
                 if let ending = Self.readEndings.match(tokens, at: end) { end += ending.length }
                 if end == tokens.count { return ReadRequest(tool: tool.value) }

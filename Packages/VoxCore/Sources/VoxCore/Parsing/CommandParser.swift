@@ -189,7 +189,7 @@ public struct CommandParser: Sendable {
         }
         if let verb = Self.focusVerbs.match(tokens, at: i) {
             let j = skipArticles(tokens, from: i + verb.length)
-            if let tool = tools.match(tokens, at: j), !isAppNoun(tokens, at: j + tool.length) {
+            if let tool = matchInstance(tokens, at: j), !isAppNoun(tokens, at: j + tool.length) {
                 return .focus(tool: tool.value)
             }
             if let intent = parseAppClause(text, tokens, from: j, make: DesktopCommand.focusApp) { return intent }
@@ -197,15 +197,15 @@ public struct CommandParser: Sendable {
         }
         if let verb = Self.killVerbs.match(tokens, at: i) {
             let j = skipArticles(tokens, from: i + verb.length)
-            if let tool = tools.match(tokens, at: j), !isAppNoun(tokens, at: j + tool.length) {
+            if let tool = matchInstance(tokens, at: j), !isAppNoun(tokens, at: j + tool.length) {
                 return .kill(tool: tool.value)
             }
             if let intent = parseAppClause(text, tokens, from: j, make: DesktopCommand.quitApp) { return intent }
             return unknownTool(text, tokens, from: j)
         }
 
-        // A bare tool name focuses it: "claude".
-        if let tool = tools.match(tokens, at: i), tool.length == rest.count {
+        // A bare tool name focuses it: "claude", "claude in chirp".
+        if let tool = matchInstance(tokens, at: i), tool.length == rest.count {
             return .focus(tool: tool.value)
         }
         return .unknown
@@ -236,6 +236,22 @@ public struct CommandParser: Sendable {
         if let c = Self.connectors.match(tokens, at: j) { j += c.length }
         let prompt = Tokenizer.remainder(of: text, tokens: tokens, from: j)
         return .launch(tool: tool.value, project: project, prompt: prompt)
+    }
+
+    /// A running tool, optionally with its project (Phase 12.4): "claude" -> claude,
+    /// "claude in chirp" -> claude@chirp. "in <something else>" is left for the caller.
+    func matchInstance(_ tokens: [Token], at i: Int) -> (value: String, length: Int)? {
+        guard let tool = tools.match(tokens, at: i) else { return nil }
+        let after = i + tool.length
+        if let loc = Self.locationWords.match(tokens, at: after) {
+            let k = skipArticles(tokens, from: after + loc.length)
+            if let project = projects.match(tokens, at: k) {
+                var end = k + project.length
+                if end < tokens.count, Self.projectNouns.contains(tokens[end].norm) { end += 1 }
+                return (InstanceName.make(tool: tool.value, project: project.value), end - i)
+            }
+        }
+        return (tool.value, tool.length)
     }
 
     // MARK: Desktop commands

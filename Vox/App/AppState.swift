@@ -324,8 +324,7 @@ final class AppState: ObservableObject {
     func refreshStatus() {
         if let engine {
             Task {
-                let running = await engine.runningSessions()
-                    .map { String($0.dropFirst(SessionNaming.prefix.count)) }
+                let running = await engine.runningSessions().map(SessionNaming.instance(fromSession:))
                 if running != sessions { sessions = running }
             }
         }
@@ -376,10 +375,10 @@ final class AppState: ObservableObject {
         }
     }
 
-    /// "vox …" works both when idle and while talking to a tool.
-    func launchTool(_ tool: String) { submit("vox run \(tool)") }
-    func focusTool(_ tool: String) { submit("vox switch to \(tool)") }
-    func killTool(_ tool: String) { submit("vox kill \(tool)") }
+    /// "vox …" works both when idle and while talking to a tool. "claude@chirp" is said as "claude in chirp".
+    func launchTool(_ tool: String) { submit("vox run \(InstanceName.spoken(tool))") }
+    func focusTool(_ tool: String) { submit("vox switch to \(InstanceName.spoken(tool))") }
+    func killTool(_ tool: String) { submit("vox kill \(InstanceName.spoken(tool))") }
 
     /// A tile's command box: text goes to that tool (Enter included) without switching to it.
     func sendToTool(_ tool: String, _ text: String) {
@@ -754,11 +753,11 @@ final class RemoteHost: ObservableObject {
             appState.exitPassThrough()
             return events([])
         case let .launch(tool):
-            return events(await appState.perform("vox run \(tool)", fromPhone: true))
+            return events(await appState.perform("vox run \(InstanceName.spoken(tool))", fromPhone: true))
         case let .kill(tool):
-            return events(await appState.perform("vox kill \(tool)", fromPhone: true))
+            return events(await appState.perform("vox kill \(InstanceName.spoken(tool))", fromPhone: true))
         case let .focus(tool):
-            return events(await appState.perform("vox switch to \(tool)", fromPhone: true))
+            return events(await appState.perform("vox switch to \(InstanceName.spoken(tool))", fromPhone: true))
         case let .send(tool, text):
             return events(await appState.sendToToolNow(tool, text))
         case let .type(tool, text):
