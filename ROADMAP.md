@@ -37,6 +37,7 @@ Never mark `[x]` for something you could not run. Use `[w]` and say why in the L
      in Safari; wrong code → 401 then lockout.
   3. Owner: Tailscale on Mac + iPhone → `scripts/Remote-Tailscale.command` → scan the QR.
   4. Windows: `scripts/Package-Windows.command` → copy `dist/Vox-Windows.zip` to the PC → `Install-Vox.cmd`.
+- **Phase 12 (completeness, 2026-10-05):** owner asked for the audit list in the roadmap and to start on 12.1–12.4.
 - **How agents verify on this Mac:** `scripts/Verify.command` (unit tests + app build → `.logs/verify.log`),
   `scripts/Verify-Tools.command` (real tmux + tools → `.logs/selftest.log`), `cd windows && npm test`.
 - **Blockers:** agents can't see Vox's own window (need the owner's eyes for GUI/HUD visuals); Electron's binary
@@ -76,6 +77,7 @@ Never mark `[x]` for something you could not run. Use `[w]` and say why in the L
 | 9 | Vox for Windows (Node agent, native terminals, same phone app) | `[~]` | 5–7 d |
 | 10 | Public release + portfolio: CI, GitHub, browser demo, landing page, signed downloads | `[ ]` | 4–6 d |
 | 11 | Windows desktop app: Electron shell, HUD + xterm.js, hotkey, on-device voice, full parity | `[~]` W0 done | 8–12 d |
+| 12 | Completeness: hands-free AI-tool loop, app polish, phone push, release quality (audit 2026-10-05) | `[~]` | ongoing |
 
 ---
 
@@ -404,6 +406,45 @@ Marks: `[x]` = verified on this PC, `[w]` = written but not verifiable here, `[~
       bundling engine + `node.exe` + node-pty + speech models (or first-run download with SHA-256). Update `release.yml`
       windows job, `site/src/data.js`, README, CHANGELOG; keep CI green on macOS/Windows/Linux. Smoke-test the installer.
 - [ ] **W10 Final verification** — the "done" bar in `windows/PROMPT.md` §W10, all on this PC.
+
+## Phase 12: Completeness (audit 2026-10-05)
+
+Owner's request 2026-10-05: "I want it to be more and more complete." Items from the 2026-10-05 audit, in priority order.
+Tier 1 makes the Claude Code loop truly hands-free; do those first. Every grammar item needs the Swift **and** JS
+grammar plus a case in `shared/grammar-cases.json`.
+
+**Tier 1: driving AI tools**
+- [ ] 12.1 **Tool attention alerts.** Watch each tmux tool's screen; when it shows an approval prompt, goes idle
+      after working, or exits, say so (spoken + macOS notification + phone state). Per-tool patterns in config
+      (`attentionPatterns`), sensible defaults for Claude Code / Codex / Gemini. Pure detector in VoxCore with tests.
+- [ ] 12.2 **Keys to a tool by voice.** "press escape", "shift tab", "arrow down", "press enter", "choose option 2",
+      "approve" / "deny" while talking to a tool (and "press escape in claude" from anywhere). New `RouterAction.key`.
+- [ ] 12.3 **Read output back.** "what did claude say", "read the last answer", "read claude": speak the tail of the
+      tool's screen (cleaned of box-drawing / UI chrome).
+- [ ] 12.4 **Several sessions per tool.** "run claude in chirp" while claude runs in vox starts a second session
+      (`claude-chirp`) instead of silently focusing the vox one; "switch to claude in chirp", kill/tell by project.
+- [ ] 12.5 Draft mode for prompts: "scratch that", "add …", "send it" before text reaches an agent
+- [ ] 12.6 Pass-through to an IDE terminal (same as Phase 4's open item)
+
+**Tier 2: app**
+- [ ] 12.7 First-run onboarding: permissions walkthrough, detect installed CLI tools (Phase 10 item)
+- [ ] 12.8 Settings → Apps/Aliases tab (custom app names, sites, phrases)
+- [ ] 12.9 Routines: one phrase → several steps ("start work")
+- [ ] 12.10 Window management: left/right half, maximize, next display
+- [ ] 12.11 More system controls: brightness, Do Not Disturb/Focus, Wi-Fi/Bluetooth, screenshot, sleep
+- [ ] 12.12 Wake word: custom keyword model if "Balcha" stays flaky; self-trigger guard check
+- [ ] 12.13 ASR spike: WhisperKit / SpeechAnalyzer vs SFSpeechRecognizer + latency numbers (Phase 3 spikes)
+- [ ] 12.14 LLM fallback can pick desktop commands, not just tools
+
+**Tier 3: phone + Windows**
+- [ ] 12.15 Push updates to the phone (SSE/WebSocket) instead of 1 s polling
+- [ ] 12.16 Phone notifications when a tool needs approval (Web Push over Tailscale HTTPS)
+- [ ] 12.17 Port 12.1–12.4 to the Windows agent (beyond grammar parity)
+
+**Tier 4: release**
+- [ ] 12.18 Update check (Sparkle or GitHub Releases)
+- [ ] 12.19 "Export diagnostics": redacted log + config for bug reports
+- [ ] 12.20 Demo video + screenshots (Phase 10 item)
 
 ## Log
 
